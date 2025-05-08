@@ -1,68 +1,78 @@
 from fastapi import FastAPI, Request
-import openai
+from agents import Agent, Runner, Tool
 import os
-import asyncio
+import requests
 
 app = FastAPI()
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Set your API key if not already set in env
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
-# Create the assistant agent with tools (optional)
-onboarding_agent = openai.agent.Agent.create(
+# --- Tool implementation ---
+def geocode_location(location: str):
+    url = "https://nominatim.openstreetmap.org/search"
+    params = {
+        "q": location,
+        "format": "json",
+        "limit": 1
+    }
+    headers = {
+        "User-Agent": "Questor-Agent/1.0"
+    }
+
+    response = requests.get(url, params=params, headers=headers)
+    response.raise_for_status()
+    data = response.json()
+
+    if not data:
+        return f"Sorry, I couldn't find '{location}'."
+
+    result = data[0]
+    lat = result["lat"]
+    lon = result["lon"]
+    map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
+
+    return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})"
+
+# --- Agent definition ---
+onboarding_agent = Agent(
     name="onboarding-chat-assistant",
-    instructions="You are a helpful assistant guiding new users through onboarding. Use tools or provide clear answers.",
-    tools=[
-        openai.agent.Tool.function({
-            "name": "get_started_steps",
-            "description": "Explains onboarding steps",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "user_type": {
-                        "type": "string",
-                        "description": "Type of user onboarding, e.g., creator, seeker, guest"
-                    }
-                },
-                "required": ["user_type"]
-            }
-        })
-    ]
+    instructions="You are a helpful assistant that guides users through onboarding. Use tools if needed."
 )
 
-# Tool definition
-@onboarding_agent.function
-def get_started_steps(user_type: str):
-    steps = {
-        "creator": "1. Set up your profile\n2. Create your first offer\n3. Share your profile",
-        "seeker": "1. Set your interests\n2. Browse matches\n3. Connect with creators",
-        "guest": "1. Explore the app\n2. Sign up to save favorites\n3. Create a quest"
-    }
-    return steps.get(user_type.lower(), "1. Explore the platform\n2. Create your account\n3. Follow onboarding tips")
+onboarding_agent.add_tool(
+    Tool(
+        name="geocode_location",
+        description="Get coordinates and a map preview for a location.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The location to geocode (e.g., 'Oakland, CA')"
+                }
+            },
+            "required": ["location"]
+        },
+        function=geocode_location
+    )
+)
 
-# Endpoint for frontend/mobile use
-@app.post("/agent-chat")
+# --- FastAPI route ---
+@app.post("/onboard-agent-chat")
 async def agent_chat(request: Request):
     body = await request.json()
     message = body.get("message")
-    session_id = body.get("sessionId")  # Optional, for tracking/memory
+    session_id = body.get("sessionId", None)
 
     if not message:
-        return {"error": "Missing message"}
+        return {"error": "Missing 'message'"}
 
-    # Create or reuse thread (in-memory, simple demo)
-    thread = onboarding_agent.new_thread(session_id=session_id or None)
-    thread.send(message)
+    result = Runner.run_sync(onboarding_agent, message)
 
-    response = thread.run()
-
-    while response.status != "completed":
-        await asyncio.sleep(1)
-        response.refresh()
-
-    reply = response.output.get("content", "No response generated.")
     return {
-        "message": reply,
+        "message": result.final_output,
         "session_id": session_id,
-        "thread_id": thread.id
+        "trace_id": result.trace_id
     }
 
