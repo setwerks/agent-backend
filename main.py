@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from agents import Agent, Runner
+from agents import Agent, Runner, tool
 import requests
 import os
 
@@ -7,14 +7,8 @@ app = FastAPI()
 
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
-# Create the agent
-onboarding_agent = Agent(
-    name="onboarding-chat-assistant",
-    instructions="You are a helpful assistant that guides users through onboarding. Use tools if needed."
-)
-
-# Register the tool using a decorator
-@onboarding_agent.tool
+# ✅ Define the tool using the `@tool` decorator
+@tool
 def geocode_location(location: str) -> str:
     """Get coordinates and a map preview for a location."""
     url = "https://nominatim.openstreetmap.org/search"
@@ -40,7 +34,14 @@ def geocode_location(location: str) -> str:
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
     return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})"
 
-# Chat endpoint
+# ✅ Create the agent and include tools
+onboarding_agent = Agent(
+    name="onboarding-chat-assistant",
+    instructions="You are a helpful assistant that guides users through onboarding. Use tools if needed.",
+    tools=[geocode_location]  # <-- reference the decorated function
+)
+
+# ✅ Expose the assistant via FastAPI
 @app.post("/onboard-agent-chat")
 async def agent_chat(request: Request):
     body = await request.json()
