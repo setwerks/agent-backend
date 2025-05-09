@@ -141,6 +141,5 @@ async def agent_chat(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    # Just log the startup info, let uvicorn handle the server
+    # Just log the startup info
     logger.info("Application startup complete")
-    logger.info(f"Environment PORT: {os.getenv('PORT')}")
