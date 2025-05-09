@@ -2,6 +2,12 @@ from fastapi import FastAPI, Request
 from agents import Agent, Runner, function_tool
 import os
 import requests
+import uvicorn
+
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 80))  # 🔥 critical for Railway
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
 
 # Initialize FastAPI app
 app = FastAPI()
