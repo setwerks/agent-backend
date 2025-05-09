@@ -4,16 +4,12 @@ import os
 import requests
 import uvicorn
 
-if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 80))  # 🔥 critical for Railway
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
-
-# Initialize FastAPI app
+# ✅ Define FastAPI app *before* launching Uvicorn
 app = FastAPI()
 
 # Set OpenAI API Key (optional if already set in the environment)
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
+
 
 # ✅ Define and register the tool using the decorator
 @function_tool
@@ -76,3 +72,7 @@ async def agent_chat(request: Request):
 
     except Exception as e:
         return {"error": str(e)}
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
