@@ -8,6 +8,8 @@ from uuid import uuid4
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from typing import Optional, List
 from agents import Agent, Runner, function_tool, RunConfig
 
 # Load environment variables
@@ -23,10 +25,8 @@ SUPABASE_HEADERS = {
     "Content-Type": "application/json"
 }
 
-
 os.makedirs("uploads", exist_ok=True)
 app = FastAPI()
-
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
@@ -52,11 +52,25 @@ def geocode_location(location: str) -> str:
     return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})"
 
 # === TOOL 2: Create quest ===
+class QuestData(BaseModel):
+    want_or_have: Optional[str]
+    description: Optional[str]
+    general_location: Optional[str]
+    location_confirmed: Optional[bool]
+    distance: Optional[float]
+    distance_unit: Optional[str]
+    price: Optional[float]
+    photos: Optional[List[str]] = []
+
+    model_config = {
+        'extra': 'forbid'
+    }
+
 @function_tool
-def create_quest(quest_data: dict) -> str:
+def create_quest(quest_data: QuestData) -> str:
     try:
         api_url = os.getenv("QUEST_CREATE_ENDPOINT", "http://localhost:5000/quests")
-        response = requests.post(api_url, json=quest_data)
+        response = requests.post(api_url, json=quest_data.dict())
         response.raise_for_status()
         return "✅ Quest has been created!"
     except Exception as e:
@@ -122,13 +136,11 @@ async def start_quest(request: Request):
             run_config=RunConfig(workflow_name="quest_workflow")
         )
 
-        # Append new message to history
         updated_history = history + [
             {"role": "user", "content": message},
             {"role": "assistant", "content": result.final_output}
         ]
 
-        # Simulate extracting quest state
         quest_state = session.get("quest_state", {})
         save_session(quest_id, quest_state, updated_history)
 
