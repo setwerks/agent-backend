@@ -5,6 +5,7 @@ import requests
 import uvicorn
 from typing import Optional
 import logging
+from fastapi.middleware.cors import CORSMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -22,6 +23,18 @@ if not api_key:
     logger.warning("OPENAI_API_KEY not set in environment variables")
 os.environ["OPENAI_API_KEY"] = api_key
 
+# Add request/response logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    try:
+        body = await request.body()
+        logger.info(f"Request body: {body.decode('utf-8')}")
+    except Exception as e:
+        logger.warning(f"Could not read request body: {e}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
 # ✅ Define and register the tool using the decorator
 @function_tool
@@ -71,6 +84,7 @@ async def agent_chat(request: Request):
     try:
         logger.info("Received new chat request")
         body = await request.json()
+        logger.info(f"Request JSON: {body}")
         message = body.get("message")
 
         if not message:
