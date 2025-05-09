@@ -1,15 +1,12 @@
 from fastapi import FastAPI, Request
-from agents import Agent, Runner
-from agents.tool import tool
-import requests
+from agents import Agent, Runner, Tool
 import os
+import requests
 
 app = FastAPI()
-
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
-# ✅ Define the tool using the `@tool` decorator
-@tool
+# ✅ Define the function
 def geocode_location(location: str) -> str:
     """Get coordinates and a map preview for a location."""
     url = "https://nominatim.openstreetmap.org/search"
@@ -35,28 +32,33 @@ def geocode_location(location: str) -> str:
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
     return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})"
 
-# ✅ Create the agent and include tools
+# ✅ Register it as a Tool
+geo_tool = Tool(
+    name="geocode_location",
+    description="Get coordinates and a map preview for a location.",
+    function=geocode_location
+)
+
+# ✅ Create agent with the tool
 onboarding_agent = Agent(
     name="onboarding-chat-assistant",
     instructions="You are a helpful assistant that guides users through onboarding. Use tools if needed.",
-    tools=[geocode_location]  # <-- reference the decorated function
+    tools=[geo_tool]
 )
 
-# ✅ Expose the assistant via FastAPI
+# ✅ FastAPI route
 @app.post("/onboard-agent-chat")
 async def agent_chat(request: Request):
     body = await request.json()
     message = body.get("message")
-    session_id = body.get("sessionId", None)
 
     if not message:
         return {"error": "Missing 'message'"}
 
-    result = Runner.run_sync(onboarding_agent, message)
+    result = await Runner.run(onboarding_agent, message)
 
     return {
         "message": result.final_output,
-        "session_id": session_id,
         "trace_id": result.trace_id
     }
 
