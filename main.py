@@ -1,12 +1,16 @@
 from fastapi import FastAPI, Request
-from agents import Agent, Runner, Tool
+from agents import Agent, Runner, function_tool
 import os
 import requests
 
+# Initialize FastAPI app
 app = FastAPI()
+
+# Set OpenAI API Key (optional if already set in the environment)
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
-# ✅ Define the function
+# ✅ Define and register the tool using the decorator
+@function_tool
 def geocode_location(location: str) -> str:
     """Get coordinates and a map preview for a location."""
     url = "https://nominatim.openstreetmap.org/search"
@@ -19,9 +23,12 @@ def geocode_location(location: str) -> str:
         "User-Agent": "Questor-Agent/1.0"
     }
 
-    response = requests.get(url, params=params, headers=headers)
-    response.raise_for_status()
-    data = response.json()
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        return f"Error fetching location data: {str(e)}"
 
     if not data:
         return f"Sorry, I couldn't find '{location}'."
@@ -32,33 +39,34 @@ def geocode_location(location: str) -> str:
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
     return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})"
 
-# ✅ Register it as a Tool
-geo_tool = Tool(
-    name="geocode_location",
-    description="Get coordinates and a map preview for a location.",
-    function=geocode_location
-)
-
-# ✅ Create agent with the tool
+# ✅ Create agent with tool
 onboarding_agent = Agent(
     name="onboarding-chat-assistant",
     instructions="You are a helpful assistant that guides users through onboarding. Use tools if needed.",
-    tools=[geo_tool]
+    tools=[geocode_location],
+    model="gpt-4o"  # Optional: specify model
 )
 
-# ✅ FastAPI route
+# ✅ Define API endpoint
 @app.post("/onboard-agent-chat")
 async def agent_chat(request: Request):
-    body = await request.json()
-    message = body.get("message")
+    try:
+        body = await request.json()
+        message = body.get("message")
 
-    if not message:
-        return {"error": "Missing 'message'"}
+        if not message:
+            return {"error": "Missing 'message'"}
 
-    result = await Runner.run(onboarding_agent, message)
+        result = await Runner.run(
+            onboarding_agent,
+            message,
+            run_config={"workflow_name": "onboarding_flow"}  # Optional tracing
+        )
 
-    return {
-        "message": result.final_output,
-        "trace_id": result.trace_id
-    }
+        return {
+            "message": result.final_output,
+            "trace_id": result.trace_id
+        }
 
+    except Exception as e:
+        return {"error": str(e)}
