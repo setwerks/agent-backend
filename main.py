@@ -1,94 +1,163 @@
-from fastapi import FastAPI, Request
-from agents import Agent, Runner, function_tool, RunConfig
 import os
+import json
+import logging
 import requests
 import uvicorn
-import json
+from datetime import datetime
+from uuid import uuid4
+from fastapi import FastAPI, Request, UploadFile, File
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
+from agents import Agent, Runner, function_tool, RunConfig
 
-
-import logging
+# Load environment variables
 load_dotenv()
-logging.basicConfig(
-    level=logging.INFO,  # or DEBUG for even more detail
-    format="%(levelname)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-# ✅ Initialize FastAPI app
+# Supabase config
+SUPABASE_API = os.getenv("SUPABASE_API")  # e.g., https://xyz.supabase.co/rest/v1/quest_sessions
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE")
+SUPABASE_HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json"
+}
+
+# FastAPI app setup
 app = FastAPI()
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# ✅ Set OpenAI API Key (optional if already in environment)
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
-# ✅ Define and register a tool using the decorator
+
+# === TOOL 1: Geocode location ===
 @function_tool
 def geocode_location(location: str) -> str:
-    """Get coordinates and a map preview for a location."""
     url = "https://nominatim.openstreetmap.org/search"
-    params = {
-        "q": location,
-        "format": "json",
-        "limit": 1
-    }
-    headers = {
-        "User-Agent": "Questor-Agent/1.0"
-    }
-
+    params = {"q": location, "format": "json", "limit": 1}
+    headers = {"User-Agent": "Questor-Agent/1.0"}
     try:
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         data = response.json()
     except Exception as e:
         return f"Error fetching location data: {str(e)}"
-
     if not data:
         return f"Sorry, I couldn't find '{location}'."
-
     result = data[0]
     lat = result["lat"]
     lon = result["lon"]
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
     return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})"
 
-# ✅ Create agent with the tool
-onboarding_agent = Agent(
-    name="onboarding-chat-assistant",
-    instructions="You are a helpful assistant that guides users through onboarding. Use tools if needed.",
-    tools=[geocode_location],
-    model="gpt-4o"  # Optional: use a specific OpenAI model
+# === TOOL 2: Create quest ===
+@function_tool
+def create_quest(quest_data: dict) -> str:
+    try:
+        api_url = os.getenv("QUEST_CREATE_ENDPOINT", "http://localhost:5000/quests")
+        response = requests.post(api_url, json=quest_data)
+        response.raise_for_status()
+        return "✅ Quest has been created!"
+    except Exception as e:
+        return f"❌ Failed to create quest: {str(e)}"
+
+# === SESSION HELPERS ===
+def load_session(quest_id: str):
+    res = requests.get(f"{SUPABASE_API}?quest_id=eq.{quest_id}", headers=SUPABASE_HEADERS)
+    res.raise_for_status()
+    data = res.json()
+    return data[0] if data else {}
+
+def save_session(quest_id: str, quest_state: dict, chat_history: list):
+    payload = {
+        "quest_state": quest_state,
+        "chat_history": chat_history,
+        "last_updated": datetime.utcnow().isoformat()
+    }
+    res = requests.patch(f"{SUPABASE_API}?quest_id=eq.{quest_id}", json=payload, headers=SUPABASE_HEADERS)
+    res.raise_for_status()
+
+# === AGENT PROMPT ===
+quest_prompt = """
+You are a helpful onboarding assistant for a quest app. You help users create a new quest by collecting the following information, step by step:
+What the user wants or has (e.g., “offering a new car”)
+A short description
+The general location (city, state)
+Confirmation of the location
+The distance (in km or miles) for the quest
+Price, if applicable
+Photos (optional)
+Use buttons for Yes/No confirmation prompts, or accept typed responses.
+When all required fields are collected and confirmed, call create_quest with the data.
+Never ask for the same information twice unless the user says it's incorrect.
+"""
+
+# === AGENT ===
+quest_agent = Agent(
+    name="quest-onboarding-agent",
+    instructions=quest_prompt,
+    tools=[geocode_location, create_quest],
+    model="gpt-4o"
 )
 
-@app.post("/onboard-agent-chat")
-async def agent_chat(request: Request):
+# === MAIN QUEST ROUTE ===
+@app.post("/start-quest")
+async def start_quest(request: Request):
     try:
         body = await request.json()
         message = body.get("message")
+        quest_id = body.get("quest_id")
 
-        if not message:
-            return {"error": "Missing 'message'"}
+        if not message or not quest_id:
+            return {"error": "Missing 'message' or 'quest_id'"}
+
+        session = load_session(quest_id)
+        history = session.get("chat_history", [])
 
         result = await Runner.run(
-            onboarding_agent,
+            quest_agent,
             message,
-            run_config=RunConfig(workflow_name="onboarding_flow")
+            messages=history,
+            run_config=RunConfig(workflow_name="quest_workflow")
         )
 
-        # ✅ Dump all attributes manually
-        logging.info("=== RunResult attributes ===")
-        for attr in dir(result):
-            if not attr.startswith("_") and not callable(getattr(result, attr)):
-                try:
-                    val = getattr(result, attr)
-                    logging.info(f"{attr} = {val}")
-                except Exception as e:
-                    logging.warning(f"{attr} could not be read: {e}")
+        # Append new message to history
+        updated_history = history + [
+            {"role": "user", "content": message},
+            {"role": "assistant", "content": result.final_output}
+        ]
+
+        # Simulate extracting quest state
+        quest_state = session.get("quest_state", {})
+        save_session(quest_id, quest_state, updated_history)
 
         return {
             "message": result.final_output
         }
 
     except Exception as e:
-        logging.exception("Agent run failed")
+        logging.exception("Quest agent failed")
         return {"error": str(e)}
+
+# === PHOTO UPLOAD ===
+@app.post("/upload-photo")
+async def upload_photo(file: UploadFile = File(...)):
+    try:
+        os.makedirs("uploads", exist_ok=True)
+        file_ext = file.filename.split(".")[-1]
+        file_id = f"{uuid4()}.{file_ext}"
+        file_path = os.path.join("uploads", file_id)
+
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+
+        photo_url = f"/uploads/{file_id}"
+        return {"url": photo_url}
+
+    except Exception as e:
+        logging.exception("Photo upload failed")
+        return {"error": str(e)}
+
+# === ENTRY POINT ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
