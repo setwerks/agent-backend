@@ -19,6 +19,15 @@ logger = logging.getLogger(__name__)
 # ✅ Define FastAPI app *before* launching Uvicorn
 app = FastAPI()
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 # Log environment variables (excluding sensitive ones)
 logger.info("Environment variables:")
 for key in ["PORT", "RAILWAY_ENVIRONMENT", "RAILWAY_SERVICE_NAME"]:
@@ -54,7 +63,7 @@ async def log_requests(request: Request, call_next):
 @app.get("/health")
 async def health_check():
     logger.info("Health check endpoint called")
-    return {"status": "healthy"}
+    return {"status": "healthy", "port": os.getenv("PORT")}
 
 # ✅ Define and register the tool using the decorator
 @function_tool
