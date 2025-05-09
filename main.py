@@ -5,22 +5,32 @@ import requests
 import uvicorn
 from typing import Optional
 import logging
+import sys
 from fastapi.middleware.cors import CORSMiddleware
 
-# Configure logging
+# Configure logging to output to stdout
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
 )
 logger = logging.getLogger(__name__)
 
 # ✅ Define FastAPI app *before* launching Uvicorn
 app = FastAPI()
 
+# Log environment variables (excluding sensitive ones)
+logger.info("Environment variables:")
+for key in ["PORT", "RAILWAY_ENVIRONMENT", "RAILWAY_SERVICE_NAME"]:
+    value = os.getenv(key)
+    logger.info(f"{key}: {value}")
+
 # Set OpenAI API Key (optional if already set in the environment)
 api_key = os.getenv("OPENAI_API_KEY", "")
 if not api_key:
-    logger.warning("OPENAI_API_KEY not set in environment variables")
+    logger.error("OPENAI_API_KEY not set in environment variables")
+else:
+    logger.info("OPENAI_API_KEY is set")
 os.environ["OPENAI_API_KEY"] = api_key
 
 # Add request/response logging middleware
@@ -32,9 +42,19 @@ async def log_requests(request: Request, call_next):
         logger.info(f"Request body: {body.decode('utf-8')}")
     except Exception as e:
         logger.warning(f"Could not read request body: {e}")
-    response = await call_next(request)
-    logger.info(f"Response status: {response.status_code}")
-    return response
+    try:
+        response = await call_next(request)
+        logger.info(f"Response status: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Error processing request: {str(e)}", exc_info=True)
+        raise
+
+# Add health check endpoint
+@app.get("/health")
+async def health_check():
+    logger.info("Health check endpoint called")
+    return {"status": "healthy"}
 
 # ✅ Define and register the tool using the decorator
 @function_tool
@@ -112,13 +132,22 @@ async def agent_chat(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    logger.info(f"Starting server on port {port}")
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=port,
-        log_level="info",
-        timeout_keep_alive=30,
-        access_log=True
-    )
+    try:
+        port = int(os.getenv("PORT", 8000))
+        logger.info(f"Starting server on port {port}")
+        logger.info("Server configuration:")
+        logger.info(f"- Host: 0.0.0.0")
+        logger.info(f"- Port: {port}")
+        logger.info(f"- Log level: INFO")
+        
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=port,
+            log_level="info",
+            timeout_keep_alive=30,
+            access_log=True
+        )
+    except Exception as e:
+        logger.error(f"Failed to start server: {str(e)}", exc_info=True)
+        sys.exit(1)
