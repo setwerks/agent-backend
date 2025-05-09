@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
-from agents import Agent, Runner, tool
+from agents import Agent, Runner
+from agents.tool import tool
 import requests
 import os
 
