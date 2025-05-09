@@ -23,8 +23,10 @@ SUPABASE_HEADERS = {
     "Content-Type": "application/json"
 }
 
-# FastAPI app setup
+
+os.makedirs("uploads", exist_ok=True)
 app = FastAPI()
+
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
