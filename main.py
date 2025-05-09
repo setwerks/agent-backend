@@ -141,22 +141,6 @@ async def agent_chat(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    try:
-        port = int(os.getenv("PORT", 8000))
-        logger.info(f"Starting server on port {port}")
-        logger.info("Server configuration:")
-        logger.info(f"- Host: 0.0.0.0")
-        logger.info(f"- Port: {port}")
-        logger.info(f"- Log level: INFO")
-        
-        uvicorn.run(
-            "main:app",
-            host="0.0.0.0",
-            port=port,
-            log_level="info",
-            timeout_keep_alive=30,
-            access_log=True
-        )
-    except Exception as e:
-        logger.error(f"Failed to start server: {str(e)}", exc_info=True)
-        sys.exit(1)
+    # Just log the startup info, let uvicorn handle the server
+    logger.info("Application startup complete")
+    logger.info(f"Environment PORT: {os.getenv('PORT')}")
