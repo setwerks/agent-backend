@@ -78,10 +78,25 @@ def create_quest(quest_data: QuestData) -> str:
 
 # === SESSION HELPERS ===
 def load_session(quest_id: str):
-    res = requests.get(f"{SUPABASE_API}?quest_id=eq.{quest_id}", headers=SUPABASE_HEADERS)
+    url = f"{SUPABASE_API}?quest_id=eq.{quest_id}"
+    res = requests.get(url, headers=SUPABASE_HEADERS)
+    
+    if res.status_code == 404 or not res.json():
+        # Session not found — create it
+        logging.info("Creating new session for quest_id: %s", quest_id)
+        init_payload = {
+            "quest_id": quest_id,
+            "quest_state": {},
+            "chat_history": [],
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        create_res = requests.post(SUPABASE_API, headers=SUPABASE_HEADERS, json=init_payload)
+        create_res.raise_for_status()
+        return init_payload
+    
     res.raise_for_status()
     data = res.json()
-    return data[0] if data else {}
+    return data[0]
 
 def save_session(quest_id: str, quest_state: dict, chat_history: list):
     payload = {
