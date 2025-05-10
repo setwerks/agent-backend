@@ -1,0 +1,1932 @@
+ok so I ran this:
+
+import agents
+import inspect
+import logging
+
+# Configure logging to output to the console
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+logging.info("--- Inspecting the 'agents' module ---")
+logging.info(f"Available names directly in the 'agents' module: {dir(agents)}")
+
+logging.info("\n--- Inspecting members of the 'agents' module ---")
+for name, obj in inspect.getmembers(agents):
+    if not name.startswith("__"):
+        logging.info(f"Name: {name}, Type: {type(obj)}")
+        if hasattr(obj, '__doc__') and obj.__doc__:
+            logging.info(f"  Docstring: {obj.__doc__.strip()}")
+        if inspect.isclass(obj):
+            logging.info(f"  --- Inspecting members of class '{name}' ---")
+            for member_name, member_obj in inspect.getmembers(obj):
+                if not member_name.startswith("__"):
+                    logging.info(f"    Member Name: {member_name}, Type: {type(member_obj)}")
+                    if hasattr(member_obj, '__doc__') and member_obj.__doc__:
+                        logging.info(f"      Member Docstring: {member_obj.__doc__.strip()}")
+            logging.info(f"  --- End of class '{name}' inspection ---")
+        elif inspect.isfunction(obj):
+            signature = inspect.signature(obj)
+            logging.info(f"  Signature: {signature}")
+        logging.info("-" * 40)and got this
+venv) csp@ubi:~/agent-backend$ python main.py
+2025-05-09 18:45:54,434 - INFO - --- Inspecting the 'agents' module ---
+2025-05-09 18:45:54,434 - INFO - Available names directly in the 'agents' module: ['Agent', 'AgentHooks', 'AgentOutputSchema', 'AgentOutputSchemaBase', 'AgentSpanData', 'AgentUpdatedStreamEvent', 'AgentsException', 'AsyncComputer', 'AsyncOpenAI', 'Button', 'Computer', 'ComputerTool', 'CustomSpanData', 'Environment', 'FileSearchTool', 'FunctionSpanData', 'FunctionTool', 'FunctionToolResult', 'GenerationSpanData', 'GuardrailFunctionOutput', 'GuardrailSpanData', 'Handoff', 'HandoffCallItem', 'HandoffInputData', 'HandoffInputFilter', 'HandoffOutputItem', 'HandoffSpanData', 'InputGuardrail', 'InputGuardrailResult', 'InputGuardrailTripwireTriggered', 'ItemHelpers', 'Literal', 'MCPListToolsSpanData', 'MaxTurnsExceeded', 'MessageOutputItem', 'Model', 'ModelBehaviorError', 'ModelProvider', 'ModelResponse', 'ModelSettings', 'ModelTracing', 'OpenAIChatCompletionsModel', 'OpenAIProvider', 'OpenAIResponsesModel', 'OutputGuardrail', 'OutputGuardrailResult', 'OutputGuardrailTripwireTriggered', 'RawResponsesStreamEvent', 'ReasoningItem', 'RunConfig', 'RunContextWrapper', 'RunHooks', 'RunItem', 'RunItemStreamEvent', 'RunResult', 'RunResultStreaming', 'Runner', 'Span', 'SpanData', 'SpanError', 'SpeechGroupSpanData', 'SpeechSpanData', 'StreamEvent', 'TContext', 'TResponseInputItem', 'Tool', 'ToolCallItem', 'ToolCallOutputItem', 'ToolsToFinalOutputFunction', 'ToolsToFinalOutputResult', 'Trace', 'TracingProcessor', 'TranscriptionSpanData', 'Usage', 'UserError', 'WebSearchTool', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', '_config', '_debug', '_run_impl', 'add_trace_processor', 'agent', 'agent_output', 'agent_span', 'computer', 'custom_span', 'default_tool_error_function', 'enable_verbose_stdout_logging', 'exceptions', 'function_schema', 'function_span', 'function_tool', 'gen_span_id', 'gen_trace_id', 'generation_span', 'get_current_span', 'get_current_trace', 'guardrail', 'guardrail_span', 'handoff', 'handoff_span', 'handoffs', 'input_guardrail', 'items', 'lifecycle', 'logger', 'logging', 'mcp', 'mcp_tools_span', 'model_settings', 'models', 'output_guardrail', 'result', 'run', 'run_context', 'set_default_openai_api', 'set_default_openai_client', 'set_default_openai_key', 'set_trace_processors', 'set_tracing_disabled', 'set_tracing_export_api_key', 'speech_group_span', 'speech_span', 'stream_events', 'strict_schema', 'sys', 'tool', 'trace', 'tracing', 'transcription_span', 'usage', 'util', 'version']
+2025-05-09 18:45:54,434 - INFO - 
+--- Inspecting members of the 'agents' module ---
+2025-05-09 18:45:54,434 - INFO - Name: Agent, Type: <class 'type'>
+2025-05-09 18:45:54,434 - INFO -   Docstring: An agent is an AI model configured with instructions, tools, guardrails, handoffs and more.
+
+    We strongly recommend passing `instructions`, which is the "system prompt" for the agent. In
+    addition, you can pass `handoff_description`, which is a human-readable description of the
+    agent, used when the agent is used inside tools/handoffs.
+
+    Agents are generic on the context type. The context is a (mutable) object you create. It is
+    passed to tool functions, handoffs, guardrails, etc.
+2025-05-09 18:45:54,434 - INFO -   --- Inspecting members of class 'Agent' ---
+2025-05-09 18:45:54,434 - INFO -     Member Name: as_tool, Type: <class 'function'>
+2025-05-09 18:45:54,434 - INFO -       Member Docstring: Transform this agent into a tool, callable by other agents.
+
+        This is different from handoffs in two ways:
+        1. In handoffs, the new agent receives the conversation history. In this tool, the new agent
+           receives generated input.
+        2. In handoffs, the new agent takes over the conversation. In this tool, the new agent is
+           called as a tool, and the conversation is continued by the original agent.
+
+        Args:
+            tool_name: The name of the tool. If not provided, the agent's name will be used.
+            tool_description: The description of the tool, which should indicate what it does and
+                when to use it.
+            custom_output_extractor: A function that extracts the output from the agent. If not
+                provided, the last message from the agent will be used.
+2025-05-09 18:45:54,434 - INFO -     Member Name: clone, Type: <class 'function'>
+2025-05-09 18:45:54,434 - INFO -       Member Docstring: Make a copy of the agent, with the given arguments changed. For example, you could do:
+        ```
+        new_agent = agent.clone(instructions="New instructions")
+        ```
+2025-05-09 18:45:54,434 - INFO -     Member Name: get_all_tools, Type: <class 'function'>
+2025-05-09 18:45:54,434 - INFO -       Member Docstring: All agent tools, including MCP tools and function tools.
+2025-05-09 18:45:54,435 - INFO -     Member Name: get_mcp_tools, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Fetches the available tools from the MCP servers.
+2025-05-09 18:45:54,435 - INFO -     Member Name: get_system_prompt, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Get the system prompt for the agent.
+2025-05-09 18:45:54,435 - INFO -     Member Name: handoff_description, Type: <class 'NoneType'>
+2025-05-09 18:45:54,435 - INFO -     Member Name: hooks, Type: <class 'NoneType'>
+2025-05-09 18:45:54,435 - INFO -     Member Name: instructions, Type: <class 'NoneType'>
+2025-05-09 18:45:54,435 - INFO -     Member Name: model, Type: <class 'NoneType'>
+2025-05-09 18:45:54,435 - INFO -     Member Name: output_type, Type: <class 'NoneType'>
+2025-05-09 18:45:54,435 - INFO -     Member Name: reset_tool_choice, Type: <class 'bool'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: bool(x) -> bool
+
+Returns True when the argument x is true, False otherwise.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.
+2025-05-09 18:45:54,435 - INFO -     Member Name: tool_use_behavior, Type: <class 'str'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,435 - INFO -   --- End of class 'Agent' inspection ---
+2025-05-09 18:45:54,435 - INFO - ----------------------------------------
+2025-05-09 18:45:54,435 - INFO - Name: AgentHooks, Type: <class 'type'>
+2025-05-09 18:45:54,435 - INFO -   Docstring: A class that receives callbacks on various lifecycle events for a specific agent. You can
+    set this on `agent.hooks` to receive events for that specific agent.
+
+    Subclass and override the methods you need.
+2025-05-09 18:45:54,435 - INFO -   --- Inspecting members of class 'AgentHooks' ---
+2025-05-09 18:45:54,435 - INFO -     Member Name: on_end, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Called when the agent produces a final output.
+2025-05-09 18:45:54,435 - INFO -     Member Name: on_handoff, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Called when the agent is being handed off to. The `source` is the agent that is handing
+        off to this agent.
+2025-05-09 18:45:54,435 - INFO -     Member Name: on_start, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Called before the agent is invoked. Called each time the running agent is changed to this
+        agent.
+2025-05-09 18:45:54,435 - INFO -     Member Name: on_tool_end, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Called after a tool is invoked.
+2025-05-09 18:45:54,435 - INFO -     Member Name: on_tool_start, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Called before a tool is invoked.
+2025-05-09 18:45:54,435 - INFO -   --- End of class 'AgentHooks' inspection ---
+2025-05-09 18:45:54,435 - INFO - ----------------------------------------
+2025-05-09 18:45:54,435 - INFO - Name: AgentOutputSchema, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,435 - INFO -   Docstring: An object that captures the JSON schema of the output, as well as validating/parsing JSON
+    produced by the LLM into the output type.
+2025-05-09 18:45:54,435 - INFO -   --- Inspecting members of class 'AgentOutputSchema' ---
+2025-05-09 18:45:54,435 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,435 - INFO -     Member Name: is_plain_text, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Whether the output type is plain text (versus a JSON object).
+2025-05-09 18:45:54,435 - INFO -     Member Name: is_strict_json_schema, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Whether the JSON schema is in strict mode.
+2025-05-09 18:45:54,435 - INFO -     Member Name: json_schema, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: The JSON schema of the output type.
+2025-05-09 18:45:54,435 - INFO -     Member Name: name, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: The name of the output type.
+2025-05-09 18:45:54,435 - INFO -     Member Name: validate_json, Type: <class 'function'>
+2025-05-09 18:45:54,435 - INFO -       Member Docstring: Validate a JSON string against the output type. Returns the validated object, or raises
+        a `ModelBehaviorError` if the JSON is invalid.
+2025-05-09 18:45:54,435 - INFO -   --- End of class 'AgentOutputSchema' inspection ---
+2025-05-09 18:45:54,435 - INFO - ----------------------------------------
+2025-05-09 18:45:54,435 - INFO - Name: AgentOutputSchemaBase, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,435 - INFO -   Docstring: An object that captures the JSON schema of the output, as well as validating/parsing JSON
+    produced by the LLM into the output type.
+2025-05-09 18:45:54,435 - INFO -   --- Inspecting members of class 'AgentOutputSchemaBase' ---
+2025-05-09 18:45:54,435 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,436 - INFO -     Member Name: is_plain_text, Type: <class 'function'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: Whether the output type is plain text (versus a JSON object).
+2025-05-09 18:45:54,436 - INFO -     Member Name: is_strict_json_schema, Type: <class 'function'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: Whether the JSON schema is in strict mode. Strict mode constrains the JSON schema
+        features, but guarantees valis JSON. See here for details:
+        https://platform.openai.com/docs/guides/structured-outputs#supported-schemas
+2025-05-09 18:45:54,436 - INFO -     Member Name: json_schema, Type: <class 'function'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: Returns the JSON schema of the output. Will only be called if the output type is not
+        plain text.
+2025-05-09 18:45:54,436 - INFO -     Member Name: name, Type: <class 'function'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: The name of the output type.
+2025-05-09 18:45:54,436 - INFO -     Member Name: validate_json, Type: <class 'function'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: Validate a JSON string against the output type. You must return the validated object,
+        or raise a `ModelBehaviorError` if the JSON is invalid.
+2025-05-09 18:45:54,436 - INFO -   --- End of class 'AgentOutputSchemaBase' inspection ---
+2025-05-09 18:45:54,436 - INFO - ----------------------------------------
+2025-05-09 18:45:54,436 - INFO - Name: AgentSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,436 - INFO -   Docstring: Represents an Agent Span in the trace.
+    Includes name, handoffs, tools, and output type.
+2025-05-09 18:45:54,436 - INFO -   --- Inspecting members of class 'AgentSpanData' ---
+2025-05-09 18:45:54,436 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,436 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,436 - INFO -     Member Name: handoffs, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,436 - INFO -     Member Name: name, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,436 - INFO -     Member Name: output_type, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,436 - INFO -     Member Name: tools, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,436 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,436 - INFO -   --- End of class 'AgentSpanData' inspection ---
+2025-05-09 18:45:54,436 - INFO - ----------------------------------------
+2025-05-09 18:45:54,436 - INFO - Name: AgentUpdatedStreamEvent, Type: <class 'type'>
+2025-05-09 18:45:54,436 - INFO -   Docstring: Event that notifies that there is a new agent running.
+2025-05-09 18:45:54,436 - INFO -   --- Inspecting members of class 'AgentUpdatedStreamEvent' ---
+2025-05-09 18:45:54,436 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,436 - INFO -   --- End of class 'AgentUpdatedStreamEvent' inspection ---
+2025-05-09 18:45:54,436 - INFO - ----------------------------------------
+2025-05-09 18:45:54,436 - INFO - Name: AgentsException, Type: <class 'type'>
+2025-05-09 18:45:54,436 - INFO -   Docstring: Base class for all exceptions in the Agents SDK.
+2025-05-09 18:45:54,436 - INFO -   --- Inspecting members of class 'AgentsException' ---
+2025-05-09 18:45:54,436 - INFO -     Member Name: add_note, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: Exception.add_note(note) --
+    add a note to the exception
+2025-05-09 18:45:54,436 - INFO -     Member Name: args, Type: <class 'getset_descriptor'>
+2025-05-09 18:45:54,436 - INFO -     Member Name: with_traceback, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,436 - INFO -       Member Docstring: Exception.with_traceback(tb) --
+    set self.__traceback__ to tb and return self.
+2025-05-09 18:45:54,436 - INFO -   --- End of class 'AgentsException' inspection ---
+2025-05-09 18:45:54,436 - INFO - ----------------------------------------
+2025-05-09 18:45:54,436 - INFO - Name: AsyncComputer, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,436 - INFO -   Docstring: A computer implemented with async operations. The Computer interface abstracts the
+    operations needed to control a computer or browser.
+2025-05-09 18:45:54,436 - INFO -   --- Inspecting members of class 'AsyncComputer' ---
+2025-05-09 18:45:54,437 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,437 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,437 - INFO -     Member Name: click, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: dimensions, Type: <class 'property'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: double_click, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: drag, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: environment, Type: <class 'property'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: keypress, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: move, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: screenshot, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: scroll, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: type, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: wait, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -   --- End of class 'AsyncComputer' inspection ---
+2025-05-09 18:45:54,437 - INFO - ----------------------------------------
+2025-05-09 18:45:54,437 - INFO - Name: AsyncOpenAI, Type: <class 'type'>
+2025-05-09 18:45:54,437 - INFO -   --- Inspecting members of class 'AsyncOpenAI' ---
+2025-05-09 18:45:54,437 - INFO -     Member Name: _build_headers, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _build_request, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _calculate_retry_timeout, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _default_stream_cls, Type: <class 'NoneType'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _enforce_trailing_slash, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _idempotency_key, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _make_sse_decoder, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _make_status_error, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _make_status_error_from_response, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _maybe_override_cast_to, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _parse_retry_after_header, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -       Member Docstring: Returns a float of the number of seconds (not milliseconds) to wait after retrying, or None if unspecified.
+
+        About the Retry-After header: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
+        See also  https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After#syntax
+2025-05-09 18:45:54,437 - INFO -     Member Name: _prepare_options, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -       Member Docstring: Hook for mutating the given options
+2025-05-09 18:45:54,437 - INFO -     Member Name: _prepare_request, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -       Member Docstring: This method is used as a callback for mutating the `Request` object
+        after it has been constructed.
+        This is useful for cases where you want to add certain headers based off of
+        the request properties, e.g. `url`, `method` etc.
+2025-05-09 18:45:54,437 - INFO -     Member Name: _prepare_url, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -       Member Docstring: Merge a URL argument together with any 'base_url' on the client,
+        to create the URL used for the outgoing request.
+2025-05-09 18:45:54,437 - INFO -     Member Name: _process_response, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _process_response_data, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _request_api_list, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _serialize_multipartform, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _should_retry, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _should_stream_response_body, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _sleep_for_retry, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: _validate_headers, Type: <class 'function'>
+2025-05-09 18:45:54,437 - INFO -       Member Docstring: Validate the given default headers and custom headers.
+
+        Does nothing by default.
+2025-05-09 18:45:54,437 - INFO -     Member Name: audio, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: auth_headers, Type: <class 'property'>
+2025-05-09 18:45:54,437 - INFO -     Member Name: base_url, Type: <class 'property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: batches, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: beta, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: chat, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: close, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -       Member Docstring: Close the underlying HTTPX client.
+
+        The client will *not* be usable after this.
+2025-05-09 18:45:54,438 - INFO -     Member Name: completions, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: copy, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -       Member Docstring: Create a new client instance re-using the same options given to the current client with optional overriding.
+2025-05-09 18:45:54,438 - INFO -     Member Name: custom_auth, Type: <class 'property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: default_headers, Type: <class 'property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: default_query, Type: <class 'property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: delete, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: embeddings, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: evals, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: files, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: fine_tuning, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: get, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: get_api_list, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: images, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: is_closed, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: models, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: moderations, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: patch, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: platform_headers, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: post, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: put, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: qs, Type: <class 'property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: request, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: responses, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: uploads, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: user_agent, Type: <class 'property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: vector_stores, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: with_options, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -       Member Docstring: Create a new client instance re-using the same options given to the current client with optional overriding.
+2025-05-09 18:45:54,438 - INFO -     Member Name: with_raw_response, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: with_streaming_response, Type: <class 'functools.cached_property'>
+2025-05-09 18:45:54,438 - INFO -   --- End of class 'AsyncOpenAI' inspection ---
+2025-05-09 18:45:54,438 - INFO - ----------------------------------------
+2025-05-09 18:45:54,438 - INFO - Name: Button, Type: <class 'typing._LiteralGenericAlias'>
+2025-05-09 18:45:54,438 - INFO - ----------------------------------------
+2025-05-09 18:45:54,438 - INFO - Name: Computer, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,438 - INFO -   Docstring: A computer implemented with sync operations. The Computer interface abstracts the
+    operations needed to control a computer or browser.
+2025-05-09 18:45:54,438 - INFO -   --- Inspecting members of class 'Computer' ---
+2025-05-09 18:45:54,438 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,438 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,438 - INFO -     Member Name: click, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: dimensions, Type: <class 'property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: double_click, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: drag, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: environment, Type: <class 'property'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: keypress, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: move, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: screenshot, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: scroll, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: type, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -     Member Name: wait, Type: <class 'function'>
+2025-05-09 18:45:54,438 - INFO -   --- End of class 'Computer' inspection ---
+2025-05-09 18:45:54,438 - INFO - ----------------------------------------
+2025-05-09 18:45:54,438 - INFO - Name: ComputerTool, Type: <class 'type'>
+2025-05-09 18:45:54,439 - INFO -   Docstring: A hosted tool that lets the LLM control a computer.
+2025-05-09 18:45:54,439 - INFO -   --- Inspecting members of class 'ComputerTool' ---
+2025-05-09 18:45:54,439 - INFO -     Member Name: name, Type: <class 'property'>
+2025-05-09 18:45:54,439 - INFO -   --- End of class 'ComputerTool' inspection ---
+2025-05-09 18:45:54,439 - INFO - ----------------------------------------
+2025-05-09 18:45:54,439 - INFO - Name: CustomSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,439 - INFO -   Docstring: Represents a Custom Span in the trace.
+    Includes name and data property bag.
+2025-05-09 18:45:54,439 - INFO -   --- Inspecting members of class 'CustomSpanData' ---
+2025-05-09 18:45:54,439 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,439 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,439 - INFO -     Member Name: data, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: name, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,439 - INFO -   --- End of class 'CustomSpanData' inspection ---
+2025-05-09 18:45:54,439 - INFO - ----------------------------------------
+2025-05-09 18:45:54,439 - INFO - Name: Environment, Type: <class 'typing._LiteralGenericAlias'>
+2025-05-09 18:45:54,439 - INFO - ----------------------------------------
+2025-05-09 18:45:54,439 - INFO - Name: FileSearchTool, Type: <class 'type'>
+2025-05-09 18:45:54,439 - INFO -   Docstring: A hosted tool that lets the LLM search through a vector store. Currently only supported with
+    OpenAI models, using the Responses API.
+2025-05-09 18:45:54,439 - INFO -   --- Inspecting members of class 'FileSearchTool' ---
+2025-05-09 18:45:54,439 - INFO -     Member Name: filters, Type: <class 'NoneType'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: include_search_results, Type: <class 'bool'>
+2025-05-09 18:45:54,439 - INFO -       Member Docstring: bool(x) -> bool
+
+Returns True when the argument x is true, False otherwise.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.
+2025-05-09 18:45:54,439 - INFO -     Member Name: max_num_results, Type: <class 'NoneType'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: name, Type: <class 'property'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: ranking_options, Type: <class 'NoneType'>
+2025-05-09 18:45:54,439 - INFO -   --- End of class 'FileSearchTool' inspection ---
+2025-05-09 18:45:54,439 - INFO - ----------------------------------------
+2025-05-09 18:45:54,439 - INFO - Name: FunctionSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,439 - INFO -   Docstring: Represents a Function Span in the trace.
+    Includes input, output and MCP data (if applicable).
+2025-05-09 18:45:54,439 - INFO -   --- Inspecting members of class 'FunctionSpanData' ---
+2025-05-09 18:45:54,439 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,439 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,439 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: input, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: mcp_data, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: name, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: output, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,439 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,439 - INFO -   --- End of class 'FunctionSpanData' inspection ---
+2025-05-09 18:45:54,439 - INFO - ----------------------------------------
+2025-05-09 18:45:54,439 - INFO - Name: FunctionTool, Type: <class 'type'>
+2025-05-09 18:45:54,439 - INFO -   Docstring: A tool that wraps a function. In most cases, you should use  the `function_tool` helpers to
+    create a FunctionTool, as they let you easily wrap a Python function.
+2025-05-09 18:45:54,439 - INFO -   --- Inspecting members of class 'FunctionTool' ---
+2025-05-09 18:45:54,439 - INFO -     Member Name: strict_json_schema, Type: <class 'bool'>
+2025-05-09 18:45:54,439 - INFO -       Member Docstring: bool(x) -> bool
+
+Returns True when the argument x is true, False otherwise.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.
+2025-05-09 18:45:54,439 - INFO -   --- End of class 'FunctionTool' inspection ---
+2025-05-09 18:45:54,440 - INFO - ----------------------------------------
+2025-05-09 18:45:54,440 - INFO - Name: FunctionToolResult, Type: <class 'type'>
+2025-05-09 18:45:54,440 - INFO -   Docstring: FunctionToolResult(tool: 'FunctionTool', output: 'Any', run_item: 'RunItem')
+2025-05-09 18:45:54,440 - INFO -   --- Inspecting members of class 'FunctionToolResult' ---
+2025-05-09 18:45:54,440 - INFO -   --- End of class 'FunctionToolResult' inspection ---
+2025-05-09 18:45:54,440 - INFO - ----------------------------------------
+2025-05-09 18:45:54,440 - INFO - Name: GenerationSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,440 - INFO -   Docstring: Represents a Generation Span in the trace.
+    Includes input, output, model, model configuration, and usage.
+2025-05-09 18:45:54,440 - INFO -   --- Inspecting members of class 'GenerationSpanData' ---
+2025-05-09 18:45:54,440 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,440 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,440 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: input, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: model, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: model_config, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: output, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: usage, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,440 - INFO -   --- End of class 'GenerationSpanData' inspection ---
+2025-05-09 18:45:54,440 - INFO - ----------------------------------------
+2025-05-09 18:45:54,440 - INFO - Name: GuardrailFunctionOutput, Type: <class 'type'>
+2025-05-09 18:45:54,440 - INFO -   Docstring: The output of a guardrail function.
+2025-05-09 18:45:54,440 - INFO -   --- Inspecting members of class 'GuardrailFunctionOutput' ---
+2025-05-09 18:45:54,440 - INFO -   --- End of class 'GuardrailFunctionOutput' inspection ---
+2025-05-09 18:45:54,440 - INFO - ----------------------------------------
+2025-05-09 18:45:54,440 - INFO - Name: GuardrailSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,440 - INFO -   Docstring: Represents a Guardrail Span in the trace.
+    Includes name and triggered status.
+2025-05-09 18:45:54,440 - INFO -   --- Inspecting members of class 'GuardrailSpanData' ---
+2025-05-09 18:45:54,440 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,440 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,440 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: name, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: triggered, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,440 - INFO -   --- End of class 'GuardrailSpanData' inspection ---
+2025-05-09 18:45:54,440 - INFO - ----------------------------------------
+2025-05-09 18:45:54,440 - INFO - Name: Handoff, Type: <class 'type'>
+2025-05-09 18:45:54,440 - INFO -   Docstring: A handoff is when an agent delegates a task to another agent.
+    For example, in a customer support scenario you might have a "triage agent" that determines
+    which agent should handle the user's request, and sub-agents that specialize in different
+    areas like billing, account management, etc.
+2025-05-09 18:45:54,440 - INFO -   --- Inspecting members of class 'Handoff' ---
+2025-05-09 18:45:54,440 - INFO -     Member Name: default_tool_description, Type: <class 'method'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: default_tool_name, Type: <class 'method'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: get_transfer_message, Type: <class 'function'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: input_filter, Type: <class 'NoneType'>
+2025-05-09 18:45:54,440 - INFO -     Member Name: strict_json_schema, Type: <class 'bool'>
+2025-05-09 18:45:54,440 - INFO -       Member Docstring: bool(x) -> bool
+
+Returns True when the argument x is true, False otherwise.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.
+2025-05-09 18:45:54,440 - INFO -   --- End of class 'Handoff' inspection ---
+2025-05-09 18:45:54,440 - INFO - ----------------------------------------
+2025-05-09 18:45:54,440 - INFO - Name: HandoffCallItem, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,440 - INFO -   Docstring: Represents a tool call for a handoff from one agent to another.
+2025-05-09 18:45:54,440 - INFO -   --- Inspecting members of class 'HandoffCallItem' ---
+2025-05-09 18:45:54,441 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,441 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,441 - INFO -     Member Name: to_input_item, Type: <class 'function'>
+2025-05-09 18:45:54,441 - INFO -       Member Docstring: Converts this item into an input item suitable for passing to the model.
+2025-05-09 18:45:54,441 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,441 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,441 - INFO -   --- End of class 'HandoffCallItem' inspection ---
+2025-05-09 18:45:54,441 - INFO - ----------------------------------------
+2025-05-09 18:45:54,441 - INFO - Name: HandoffInputData, Type: <class 'type'>
+2025-05-09 18:45:54,441 - INFO -   Docstring: HandoffInputData(input_history: 'str | tuple[TResponseInputItem, ...]', pre_handoff_items: 'tuple[RunItem, ...]', new_items: 'tuple[RunItem, ...]')
+2025-05-09 18:45:54,441 - INFO -   --- Inspecting members of class 'HandoffInputData' ---
+2025-05-09 18:45:54,441 - INFO -   --- End of class 'HandoffInputData' inspection ---
+2025-05-09 18:45:54,441 - INFO - ----------------------------------------
+2025-05-09 18:45:54,441 - INFO - Name: HandoffInputFilter, Type: <class 'typing._CallableGenericAlias'>
+2025-05-09 18:45:54,441 - INFO - ----------------------------------------
+2025-05-09 18:45:54,441 - INFO - Name: HandoffOutputItem, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,441 - INFO -   Docstring: Represents the output of a handoff.
+2025-05-09 18:45:54,441 - INFO -   --- Inspecting members of class 'HandoffOutputItem' ---
+2025-05-09 18:45:54,441 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,441 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,441 - INFO -     Member Name: to_input_item, Type: <class 'function'>
+2025-05-09 18:45:54,441 - INFO -       Member Docstring: Converts this item into an input item suitable for passing to the model.
+2025-05-09 18:45:54,441 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,441 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,441 - INFO -   --- End of class 'HandoffOutputItem' inspection ---
+2025-05-09 18:45:54,441 - INFO - ----------------------------------------
+2025-05-09 18:45:54,441 - INFO - Name: HandoffSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,441 - INFO -   Docstring: Represents a Handoff Span in the trace.
+    Includes source and destination agents.
+2025-05-09 18:45:54,441 - INFO -   --- Inspecting members of class 'HandoffSpanData' ---
+2025-05-09 18:45:54,441 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,441 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,441 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,441 - INFO -     Member Name: from_agent, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,441 - INFO -     Member Name: to_agent, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,441 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,441 - INFO -   --- End of class 'HandoffSpanData' inspection ---
+2025-05-09 18:45:54,441 - INFO - ----------------------------------------
+2025-05-09 18:45:54,441 - INFO - Name: InputGuardrail, Type: <class 'type'>
+2025-05-09 18:45:54,441 - INFO -   Docstring: Input guardrails are checks that run in parallel to the agent's execution.
+    They can be used to do things like:
+    - Check if input messages are off-topic
+    - Take over control of the agent's execution if an unexpected input is detected
+
+    You can use the `@input_guardrail()` decorator to turn a function into an `InputGuardrail`, or
+    create an `InputGuardrail` manually.
+
+    Guardrails return a `GuardrailResult`. If `result.tripwire_triggered` is `True`, the agent
+    execution will immediately stop and a `InputGuardrailTripwireTriggered` exception will be raised
+2025-05-09 18:45:54,441 - INFO -   --- Inspecting members of class 'InputGuardrail' ---
+2025-05-09 18:45:54,441 - INFO -     Member Name: get_name, Type: <class 'function'>
+2025-05-09 18:45:54,441 - INFO -     Member Name: name, Type: <class 'NoneType'>
+2025-05-09 18:45:54,441 - INFO -     Member Name: run, Type: <class 'function'>
+2025-05-09 18:45:54,441 - INFO -   --- End of class 'InputGuardrail' inspection ---
+2025-05-09 18:45:54,441 - INFO - ----------------------------------------
+2025-05-09 18:45:54,441 - INFO - Name: InputGuardrailResult, Type: <class 'type'>
+2025-05-09 18:45:54,441 - INFO -   Docstring: The result of a guardrail run.
+2025-05-09 18:45:54,441 - INFO -   --- Inspecting members of class 'InputGuardrailResult' ---
+2025-05-09 18:45:54,442 - INFO -   --- End of class 'InputGuardrailResult' inspection ---
+2025-05-09 18:45:54,442 - INFO - ----------------------------------------
+2025-05-09 18:45:54,442 - INFO - Name: InputGuardrailTripwireTriggered, Type: <class 'type'>
+2025-05-09 18:45:54,442 - INFO -   Docstring: Exception raised when a guardrail tripwire is triggered.
+2025-05-09 18:45:54,442 - INFO -   --- Inspecting members of class 'InputGuardrailTripwireTriggered' ---
+2025-05-09 18:45:54,442 - INFO -     Member Name: add_note, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Exception.add_note(note) --
+    add a note to the exception
+2025-05-09 18:45:54,442 - INFO -     Member Name: args, Type: <class 'getset_descriptor'>
+2025-05-09 18:45:54,442 - INFO -     Member Name: with_traceback, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Exception.with_traceback(tb) --
+    set self.__traceback__ to tb and return self.
+2025-05-09 18:45:54,442 - INFO -   --- End of class 'InputGuardrailTripwireTriggered' inspection ---
+2025-05-09 18:45:54,442 - INFO - ----------------------------------------
+2025-05-09 18:45:54,442 - INFO - Name: ItemHelpers, Type: <class 'type'>
+2025-05-09 18:45:54,442 - INFO -   --- Inspecting members of class 'ItemHelpers' ---
+2025-05-09 18:45:54,442 - INFO -     Member Name: extract_last_content, Type: <class 'method'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Extracts the last text content or refusal from a message.
+2025-05-09 18:45:54,442 - INFO -     Member Name: extract_last_text, Type: <class 'method'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Extracts the last text content from a message, if any. Ignores refusals.
+2025-05-09 18:45:54,442 - INFO -     Member Name: input_to_new_input_list, Type: <class 'method'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Converts a string or list of input items into a list of input items.
+2025-05-09 18:45:54,442 - INFO -     Member Name: text_message_output, Type: <class 'method'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Extracts all the text content from a single message output item.
+2025-05-09 18:45:54,442 - INFO -     Member Name: text_message_outputs, Type: <class 'method'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Concatenates all the text content from a list of message output items.
+2025-05-09 18:45:54,442 - INFO -     Member Name: tool_call_output_item, Type: <class 'method'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Creates a tool call output item from a tool call and its output.
+2025-05-09 18:45:54,442 - INFO -   --- End of class 'ItemHelpers' inspection ---
+2025-05-09 18:45:54,442 - INFO - ----------------------------------------
+2025-05-09 18:45:54,442 - INFO - Name: Literal, Type: <class 'typing._LiteralSpecialForm'>
+2025-05-09 18:45:54,442 - INFO -   Docstring: Special typing form to define literal types (a.k.a. value types).
+
+    This form can be used to indicate to type checkers that the corresponding
+    variable or function parameter has a value equivalent to the provided
+    literal (or one of several literals)::
+
+        def validate_simple(data: Any) -> Literal[True]:  # always returns True
+            ...
+
+        MODE = Literal['r', 'rb', 'w', 'wb']
+        def open_helper(file: str, mode: MODE) -> str:
+            ...
+
+        open_helper('/some/path', 'r')  # Passes type check
+        open_helper('/other/path', 'typo')  # Error in type checker
+
+    Literal[...] cannot be subclassed. At runtime, an arbitrary value
+    is allowed as type argument to Literal[...], but type checkers may
+    impose restrictions.
+2025-05-09 18:45:54,442 - INFO - ----------------------------------------
+2025-05-09 18:45:54,442 - INFO - Name: MCPListToolsSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,442 - INFO -   Docstring: Represents an MCP List Tools Span in the trace.
+    Includes server and result.
+2025-05-09 18:45:54,442 - INFO -   --- Inspecting members of class 'MCPListToolsSpanData' ---
+2025-05-09 18:45:54,442 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,442 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,442 - INFO -     Member Name: result, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,442 - INFO -     Member Name: server, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,442 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,442 - INFO -   --- End of class 'MCPListToolsSpanData' inspection ---
+2025-05-09 18:45:54,442 - INFO - ----------------------------------------
+2025-05-09 18:45:54,442 - INFO - Name: MaxTurnsExceeded, Type: <class 'type'>
+2025-05-09 18:45:54,442 - INFO -   Docstring: Exception raised when the maximum number of turns is exceeded.
+2025-05-09 18:45:54,442 - INFO -   --- Inspecting members of class 'MaxTurnsExceeded' ---
+2025-05-09 18:45:54,442 - INFO -     Member Name: add_note, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,442 - INFO -       Member Docstring: Exception.add_note(note) --
+    add a note to the exception
+2025-05-09 18:45:54,443 - INFO -     Member Name: args, Type: <class 'getset_descriptor'>
+2025-05-09 18:45:54,443 - INFO -     Member Name: with_traceback, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Exception.with_traceback(tb) --
+    set self.__traceback__ to tb and return self.
+2025-05-09 18:45:54,443 - INFO -   --- End of class 'MaxTurnsExceeded' inspection ---
+2025-05-09 18:45:54,443 - INFO - ----------------------------------------
+2025-05-09 18:45:54,443 - INFO - Name: MessageOutputItem, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,443 - INFO -   Docstring: Represents a message from the LLM.
+2025-05-09 18:45:54,443 - INFO -   --- Inspecting members of class 'MessageOutputItem' ---
+2025-05-09 18:45:54,443 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,443 - INFO -     Member Name: to_input_item, Type: <class 'function'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Converts this item into an input item suitable for passing to the model.
+2025-05-09 18:45:54,443 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,443 - INFO -   --- End of class 'MessageOutputItem' inspection ---
+2025-05-09 18:45:54,443 - INFO - ----------------------------------------
+2025-05-09 18:45:54,443 - INFO - Name: Model, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,443 - INFO -   Docstring: The base interface for calling an LLM.
+2025-05-09 18:45:54,443 - INFO -   --- Inspecting members of class 'Model' ---
+2025-05-09 18:45:54,443 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,443 - INFO -     Member Name: get_response, Type: <class 'function'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Get a response from the model.
+
+        Args:
+            system_instructions: The system instructions to use.
+            input: The input items to the model, in OpenAI Responses format.
+            model_settings: The model settings to use.
+            tools: The tools available to the model.
+            output_schema: The output schema to use.
+            handoffs: The handoffs available to the model.
+            tracing: Tracing configuration.
+            previous_response_id: the ID of the previous response. Generally not used by the model,
+                except for the OpenAI Responses API.
+
+        Returns:
+            The full model response.
+2025-05-09 18:45:54,443 - INFO -     Member Name: stream_response, Type: <class 'function'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Stream a response from the model.
+
+        Args:
+            system_instructions: The system instructions to use.
+            input: The input items to the model, in OpenAI Responses format.
+            model_settings: The model settings to use.
+            tools: The tools available to the model.
+            output_schema: The output schema to use.
+            handoffs: The handoffs available to the model.
+            tracing: Tracing configuration.
+            previous_response_id: the ID of the previous response. Generally not used by the model,
+                except for the OpenAI Responses API.
+
+        Returns:
+            An iterator of response stream events, in OpenAI Responses format.
+2025-05-09 18:45:54,443 - INFO -   --- End of class 'Model' inspection ---
+2025-05-09 18:45:54,443 - INFO - ----------------------------------------
+2025-05-09 18:45:54,443 - INFO - Name: ModelBehaviorError, Type: <class 'type'>
+2025-05-09 18:45:54,443 - INFO -   Docstring: Exception raised when the model does something unexpected, e.g. calling a tool that doesn't
+    exist, or providing malformed JSON.
+2025-05-09 18:45:54,443 - INFO -   --- Inspecting members of class 'ModelBehaviorError' ---
+2025-05-09 18:45:54,443 - INFO -     Member Name: add_note, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Exception.add_note(note) --
+    add a note to the exception
+2025-05-09 18:45:54,443 - INFO -     Member Name: args, Type: <class 'getset_descriptor'>
+2025-05-09 18:45:54,443 - INFO -     Member Name: with_traceback, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Exception.with_traceback(tb) --
+    set self.__traceback__ to tb and return self.
+2025-05-09 18:45:54,443 - INFO -   --- End of class 'ModelBehaviorError' inspection ---
+2025-05-09 18:45:54,443 - INFO - ----------------------------------------
+2025-05-09 18:45:54,443 - INFO - Name: ModelProvider, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,443 - INFO -   Docstring: The base interface for a model provider.
+
+    Model provider is responsible for looking up Models by name.
+2025-05-09 18:45:54,443 - INFO -   --- Inspecting members of class 'ModelProvider' ---
+2025-05-09 18:45:54,443 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,443 - INFO -     Member Name: get_model, Type: <class 'function'>
+2025-05-09 18:45:54,443 - INFO -       Member Docstring: Get a model by name.
+
+        Args:
+            model_name: The name of the model to get.
+
+        Returns:
+            The model.
+2025-05-09 18:45:54,443 - INFO -   --- End of class 'ModelProvider' inspection ---
+2025-05-09 18:45:54,443 - INFO - ----------------------------------------
+2025-05-09 18:45:54,444 - INFO - Name: ModelResponse, Type: <class 'type'>
+2025-05-09 18:45:54,444 - INFO -   Docstring: ModelResponse(output: 'list[TResponseOutputItem]', usage: 'Usage', response_id: 'str | None')
+2025-05-09 18:45:54,444 - INFO -   --- Inspecting members of class 'ModelResponse' ---
+2025-05-09 18:45:54,444 - INFO -     Member Name: to_input_items, Type: <class 'function'>
+2025-05-09 18:45:54,444 - INFO -       Member Docstring: Convert the output into a list of input items suitable for passing to the model.
+2025-05-09 18:45:54,444 - INFO -   --- End of class 'ModelResponse' inspection ---
+2025-05-09 18:45:54,444 - INFO - ----------------------------------------
+2025-05-09 18:45:54,444 - INFO - Name: ModelSettings, Type: <class 'type'>
+2025-05-09 18:45:54,444 - INFO -   Docstring: Settings to use when calling an LLM.
+
+    This class holds optional model configuration parameters (e.g. temperature,
+    top_p, penalties, truncation, etc.).
+
+    Not all models/providers support all of these parameters, so please check the API documentation
+    for the specific model and provider you are using.
+2025-05-09 18:45:54,444 - INFO -   --- Inspecting members of class 'ModelSettings' ---
+2025-05-09 18:45:54,444 - INFO -     Member Name: extra_body, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: extra_headers, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: extra_query, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: frequency_penalty, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: include_usage, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: max_tokens, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: metadata, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: parallel_tool_calls, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: presence_penalty, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: reasoning, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: resolve, Type: <class 'function'>
+2025-05-09 18:45:54,444 - INFO -       Member Docstring: Produce a new ModelSettings by overlaying any non-None values from the
+        override on top of this instance.
+2025-05-09 18:45:54,444 - INFO -     Member Name: store, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: temperature, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: to_json_dict, Type: <class 'function'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: tool_choice, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: top_p, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: truncation, Type: <class 'NoneType'>
+2025-05-09 18:45:54,444 - INFO -   --- End of class 'ModelSettings' inspection ---
+2025-05-09 18:45:54,444 - INFO - ----------------------------------------
+2025-05-09 18:45:54,444 - INFO - Name: ModelTracing, Type: <class 'enum.EnumType'>
+2025-05-09 18:45:54,444 - INFO -   --- Inspecting members of class 'ModelTracing' ---
+2025-05-09 18:45:54,444 - INFO -     Member Name: DISABLED, Type: <enum 'ModelTracing'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: ENABLED, Type: <enum 'ModelTracing'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: ENABLED_WITHOUT_DATA, Type: <enum 'ModelTracing'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: name, Type: <class 'enum.property'>
+2025-05-09 18:45:54,444 - INFO -       Member Docstring: The name of the Enum member.
+2025-05-09 18:45:54,444 - INFO -     Member Name: value, Type: <class 'enum.property'>
+2025-05-09 18:45:54,444 - INFO -       Member Docstring: The value of the Enum member.
+2025-05-09 18:45:54,444 - INFO -   --- End of class 'ModelTracing' inspection ---
+2025-05-09 18:45:54,444 - INFO - ----------------------------------------
+2025-05-09 18:45:54,444 - INFO - Name: OpenAIChatCompletionsModel, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,444 - INFO -   --- Inspecting members of class 'OpenAIChatCompletionsModel' ---
+2025-05-09 18:45:54,444 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,444 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,444 - INFO -     Member Name: _fetch_response, Type: <class 'function'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: _get_client, Type: <class 'function'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: _non_null_or_not_given, Type: <class 'function'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: get_response, Type: <class 'function'>
+2025-05-09 18:45:54,444 - INFO -     Member Name: stream_response, Type: <class 'function'>
+2025-05-09 18:45:54,444 - INFO -       Member Docstring: Yields a partial message as it is generated, as well as the usage information.
+2025-05-09 18:45:54,445 - INFO -   --- End of class 'OpenAIChatCompletionsModel' inspection ---
+2025-05-09 18:45:54,445 - INFO - ----------------------------------------
+2025-05-09 18:45:54,445 - INFO - Name: OpenAIProvider, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,445 - INFO -   --- Inspecting members of class 'OpenAIProvider' ---
+2025-05-09 18:45:54,445 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,445 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,445 - INFO -     Member Name: _get_client, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -     Member Name: get_model, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -   --- End of class 'OpenAIProvider' inspection ---
+2025-05-09 18:45:54,445 - INFO - ----------------------------------------
+2025-05-09 18:45:54,445 - INFO - Name: OpenAIResponsesModel, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,445 - INFO -   Docstring: Implementation of `Model` that uses the OpenAI Responses API.
+2025-05-09 18:45:54,445 - INFO -   --- Inspecting members of class 'OpenAIResponsesModel' ---
+2025-05-09 18:45:54,445 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,445 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,445 - INFO -     Member Name: _fetch_response, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -     Member Name: _get_client, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -     Member Name: _non_null_or_not_given, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -     Member Name: get_response, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -     Member Name: stream_response, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -       Member Docstring: Yields a partial message as it is generated, as well as the usage information.
+2025-05-09 18:45:54,445 - INFO -   --- End of class 'OpenAIResponsesModel' inspection ---
+2025-05-09 18:45:54,445 - INFO - ----------------------------------------
+2025-05-09 18:45:54,445 - INFO - Name: OutputGuardrail, Type: <class 'type'>
+2025-05-09 18:45:54,445 - INFO -   Docstring: Output guardrails are checks that run on the final output of an agent.
+    They can be used to do check if the output passes certain validation criteria
+
+    You can use the `@output_guardrail()` decorator to turn a function into an `OutputGuardrail`,
+    or create an `OutputGuardrail` manually.
+
+    Guardrails return a `GuardrailResult`. If `result.tripwire_triggered` is `True`, a
+    `OutputGuardrailTripwireTriggered` exception will be raised.
+2025-05-09 18:45:54,445 - INFO -   --- Inspecting members of class 'OutputGuardrail' ---
+2025-05-09 18:45:54,445 - INFO -     Member Name: get_name, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -     Member Name: name, Type: <class 'NoneType'>
+2025-05-09 18:45:54,445 - INFO -     Member Name: run, Type: <class 'function'>
+2025-05-09 18:45:54,445 - INFO -   --- End of class 'OutputGuardrail' inspection ---
+2025-05-09 18:45:54,445 - INFO - ----------------------------------------
+2025-05-09 18:45:54,445 - INFO - Name: OutputGuardrailResult, Type: <class 'type'>
+2025-05-09 18:45:54,445 - INFO -   Docstring: The result of a guardrail run.
+2025-05-09 18:45:54,445 - INFO -   --- Inspecting members of class 'OutputGuardrailResult' ---
+2025-05-09 18:45:54,445 - INFO -   --- End of class 'OutputGuardrailResult' inspection ---
+2025-05-09 18:45:54,445 - INFO - ----------------------------------------
+2025-05-09 18:45:54,445 - INFO - Name: OutputGuardrailTripwireTriggered, Type: <class 'type'>
+2025-05-09 18:45:54,445 - INFO -   Docstring: Exception raised when a guardrail tripwire is triggered.
+2025-05-09 18:45:54,445 - INFO -   --- Inspecting members of class 'OutputGuardrailTripwireTriggered' ---
+2025-05-09 18:45:54,445 - INFO -     Member Name: add_note, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,445 - INFO -       Member Docstring: Exception.add_note(note) --
+    add a note to the exception
+2025-05-09 18:45:54,445 - INFO -     Member Name: args, Type: <class 'getset_descriptor'>
+2025-05-09 18:45:54,445 - INFO -     Member Name: with_traceback, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,445 - INFO -       Member Docstring: Exception.with_traceback(tb) --
+    set self.__traceback__ to tb and return self.
+2025-05-09 18:45:54,445 - INFO -   --- End of class 'OutputGuardrailTripwireTriggered' inspection ---
+2025-05-09 18:45:54,445 - INFO - ----------------------------------------
+2025-05-09 18:45:54,445 - INFO - Name: RawResponsesStreamEvent, Type: <class 'type'>
+2025-05-09 18:45:54,446 - INFO -   Docstring: Streaming event from the LLM. These are 'raw' events, i.e. they are directly passed through
+    from the LLM.
+2025-05-09 18:45:54,446 - INFO -   --- Inspecting members of class 'RawResponsesStreamEvent' ---
+2025-05-09 18:45:54,446 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,446 - INFO -   --- End of class 'RawResponsesStreamEvent' inspection ---
+2025-05-09 18:45:54,446 - INFO - ----------------------------------------
+2025-05-09 18:45:54,446 - INFO - Name: ReasoningItem, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,446 - INFO -   Docstring: Represents a reasoning item.
+2025-05-09 18:45:54,446 - INFO -   --- Inspecting members of class 'ReasoningItem' ---
+2025-05-09 18:45:54,446 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,446 - INFO -     Member Name: to_input_item, Type: <class 'function'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: Converts this item into an input item suitable for passing to the model.
+2025-05-09 18:45:54,446 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,446 - INFO -   --- End of class 'ReasoningItem' inspection ---
+2025-05-09 18:45:54,446 - INFO - ----------------------------------------
+2025-05-09 18:45:54,446 - INFO - Name: RunConfig, Type: <class 'type'>
+2025-05-09 18:45:54,446 - INFO -   Docstring: Configures settings for the entire agent run.
+2025-05-09 18:45:54,446 - INFO -   --- Inspecting members of class 'RunConfig' ---
+2025-05-09 18:45:54,446 - INFO -     Member Name: group_id, Type: <class 'NoneType'>
+2025-05-09 18:45:54,446 - INFO -     Member Name: handoff_input_filter, Type: <class 'NoneType'>
+2025-05-09 18:45:54,446 - INFO -     Member Name: input_guardrails, Type: <class 'NoneType'>
+2025-05-09 18:45:54,446 - INFO -     Member Name: model, Type: <class 'NoneType'>
+2025-05-09 18:45:54,446 - INFO -     Member Name: model_settings, Type: <class 'NoneType'>
+2025-05-09 18:45:54,446 - INFO -     Member Name: output_guardrails, Type: <class 'NoneType'>
+2025-05-09 18:45:54,446 - INFO -     Member Name: trace_id, Type: <class 'NoneType'>
+2025-05-09 18:45:54,446 - INFO -     Member Name: trace_include_sensitive_data, Type: <class 'bool'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: bool(x) -> bool
+
+Returns True when the argument x is true, False otherwise.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.
+2025-05-09 18:45:54,446 - INFO -     Member Name: trace_metadata, Type: <class 'NoneType'>
+2025-05-09 18:45:54,446 - INFO -     Member Name: tracing_disabled, Type: <class 'bool'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: bool(x) -> bool
+
+Returns True when the argument x is true, False otherwise.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.
+2025-05-09 18:45:54,446 - INFO -     Member Name: workflow_name, Type: <class 'str'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,446 - INFO -   --- End of class 'RunConfig' inspection ---
+2025-05-09 18:45:54,446 - INFO - ----------------------------------------
+2025-05-09 18:45:54,446 - INFO - Name: RunContextWrapper, Type: <class 'type'>
+2025-05-09 18:45:54,446 - INFO -   Docstring: This wraps the context object that you passed to `Runner.run()`. It also contains
+    information about the usage of the agent run so far.
+
+    NOTE: Contexts are not passed to the LLM. They're a way to pass dependencies and data to code
+    you implement, like tool functions, callbacks, hooks, etc.
+2025-05-09 18:45:54,446 - INFO -   --- Inspecting members of class 'RunContextWrapper' ---
+2025-05-09 18:45:54,446 - INFO -   --- End of class 'RunContextWrapper' inspection ---
+2025-05-09 18:45:54,446 - INFO - ----------------------------------------
+2025-05-09 18:45:54,446 - INFO - Name: RunHooks, Type: <class 'type'>
+2025-05-09 18:45:54,446 - INFO -   Docstring: A class that receives callbacks on various lifecycle events in an agent run. Subclass and
+    override the methods you need.
+2025-05-09 18:45:54,446 - INFO -   --- Inspecting members of class 'RunHooks' ---
+2025-05-09 18:45:54,446 - INFO -     Member Name: on_agent_end, Type: <class 'function'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: Called when the agent produces a final output.
+2025-05-09 18:45:54,446 - INFO -     Member Name: on_agent_start, Type: <class 'function'>
+2025-05-09 18:45:54,446 - INFO -       Member Docstring: Called before the agent is invoked. Called each time the current agent changes.
+2025-05-09 18:45:54,446 - INFO -     Member Name: on_handoff, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Called when a handoff occurs.
+2025-05-09 18:45:54,447 - INFO -     Member Name: on_tool_end, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Called after a tool is invoked.
+2025-05-09 18:45:54,447 - INFO -     Member Name: on_tool_start, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Called before a tool is invoked.
+2025-05-09 18:45:54,447 - INFO -   --- End of class 'RunHooks' inspection ---
+2025-05-09 18:45:54,447 - INFO - ----------------------------------------
+2025-05-09 18:45:54,447 - INFO - Name: RunItem, Type: <class 'typing._UnionGenericAlias'>
+2025-05-09 18:45:54,447 - INFO - ----------------------------------------
+2025-05-09 18:45:54,447 - INFO - Name: RunItemStreamEvent, Type: <class 'type'>
+2025-05-09 18:45:54,447 - INFO -   Docstring: Streaming events that wrap a `RunItem`. As the agent processes the LLM response, it will
+    generate these events for new messages, tool calls, tool outputs, handoffs, etc.
+2025-05-09 18:45:54,447 - INFO -   --- Inspecting members of class 'RunItemStreamEvent' ---
+2025-05-09 18:45:54,447 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,447 - INFO -   --- End of class 'RunItemStreamEvent' inspection ---
+2025-05-09 18:45:54,447 - INFO - ----------------------------------------
+2025-05-09 18:45:54,447 - INFO - Name: RunResult, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,447 - INFO -   Docstring: RunResult(input: 'str | list[TResponseInputItem]', new_items: 'list[RunItem]', raw_responses: 'list[ModelResponse]', final_output: 'Any', input_guardrail_results: 'list[InputGuardrailResult]', output_guardrail_results: 'list[OutputGuardrailResult]', context_wrapper: 'RunContextWrapper[Any]', _last_agent: 'Agent[Any]')
+2025-05-09 18:45:54,447 - INFO -   --- Inspecting members of class 'RunResult' ---
+2025-05-09 18:45:54,447 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,447 - INFO -     Member Name: final_output_as, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: A convenience method to cast the final output to a specific type. By default, the cast
+        is only for the typechecker. If you set `raise_if_incorrect_type` to True, we'll raise a
+        TypeError if the final output is not of the given type.
+
+        Args:
+            cls: The type to cast the final output to.
+            raise_if_incorrect_type: If True, we'll raise a TypeError if the final output is not of
+                the given type.
+
+        Returns:
+            The final output casted to the given type.
+2025-05-09 18:45:54,447 - INFO -     Member Name: last_agent, Type: <class 'property'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: The last agent that was run.
+2025-05-09 18:45:54,447 - INFO -     Member Name: last_response_id, Type: <class 'property'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Convenience method to get the response ID of the last model response.
+2025-05-09 18:45:54,447 - INFO -     Member Name: to_input_list, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Creates a new input list, merging the original input with all the new items generated.
+2025-05-09 18:45:54,447 - INFO -   --- End of class 'RunResult' inspection ---
+2025-05-09 18:45:54,447 - INFO - ----------------------------------------
+2025-05-09 18:45:54,447 - INFO - Name: RunResultStreaming, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,447 - INFO -   Docstring: The result of an agent run in streaming mode. You can use the `stream_events` method to
+    receive semantic events as they are generated.
+
+    The streaming method will raise:
+    - A MaxTurnsExceeded exception if the agent exceeds the max_turns limit.
+    - A GuardrailTripwireTriggered exception if a guardrail is tripped.
+2025-05-09 18:45:54,447 - INFO -   --- Inspecting members of class 'RunResultStreaming' ---
+2025-05-09 18:45:54,447 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,447 - INFO -     Member Name: _check_errors, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -     Member Name: _cleanup_tasks, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -     Member Name: _input_guardrails_task, Type: <class 'NoneType'>
+2025-05-09 18:45:54,447 - INFO -     Member Name: _output_guardrails_task, Type: <class 'NoneType'>
+2025-05-09 18:45:54,447 - INFO -     Member Name: _run_impl_task, Type: <class 'NoneType'>
+2025-05-09 18:45:54,447 - INFO -     Member Name: _stored_exception, Type: <class 'NoneType'>
+2025-05-09 18:45:54,447 - INFO -     Member Name: cancel, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Cancels the streaming run, stopping all background tasks and marking the run as
+        complete.
+2025-05-09 18:45:54,447 - INFO -     Member Name: final_output_as, Type: <class 'function'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: A convenience method to cast the final output to a specific type. By default, the cast
+        is only for the typechecker. If you set `raise_if_incorrect_type` to True, we'll raise a
+        TypeError if the final output is not of the given type.
+
+        Args:
+            cls: The type to cast the final output to.
+            raise_if_incorrect_type: If True, we'll raise a TypeError if the final output is not of
+                the given type.
+
+        Returns:
+            The final output casted to the given type.
+2025-05-09 18:45:54,447 - INFO -     Member Name: is_complete, Type: <class 'bool'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: bool(x) -> bool
+
+Returns True when the argument x is true, False otherwise.
+The builtins True and False are the only two instances of the class bool.
+The class bool is a subclass of the class int, and cannot be subclassed.
+2025-05-09 18:45:54,447 - INFO -     Member Name: last_agent, Type: <class 'property'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: The last agent that was run. Updates as the agent run progresses, so the true last agent
+        is only available after the agent run is complete.
+2025-05-09 18:45:54,447 - INFO -     Member Name: last_response_id, Type: <class 'property'>
+2025-05-09 18:45:54,447 - INFO -       Member Docstring: Convenience method to get the response ID of the last model response.
+2025-05-09 18:45:54,447 - INFO -     Member Name: stream_events, Type: <class 'function'>
+2025-05-09 18:45:54,448 - INFO -       Member Docstring: Stream deltas for new items as they are generated. We're using the types from the
+        OpenAI Responses API, so these are semantic events: each event has a `type` field that
+        describes the type of the event, along with the data for that event.
+
+        This will raise:
+        - A MaxTurnsExceeded exception if the agent exceeds the max_turns limit.
+        - A GuardrailTripwireTriggered exception if a guardrail is tripped.
+2025-05-09 18:45:54,448 - INFO -     Member Name: to_input_list, Type: <class 'function'>
+2025-05-09 18:45:54,448 - INFO -       Member Docstring: Creates a new input list, merging the original input with all the new items generated.
+2025-05-09 18:45:54,448 - INFO -   --- End of class 'RunResultStreaming' inspection ---
+2025-05-09 18:45:54,448 - INFO - ----------------------------------------
+2025-05-09 18:45:54,448 - INFO - Name: Runner, Type: <class 'type'>
+2025-05-09 18:45:54,448 - INFO -   --- Inspecting members of class 'Runner' ---
+2025-05-09 18:45:54,448 - INFO -     Member Name: _get_all_tools, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _get_handoffs, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _get_model, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _get_new_response, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _get_output_schema, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _get_single_step_result_from_response, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _run_input_guardrails, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _run_input_guardrails_with_queue, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _run_output_guardrails, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _run_single_turn, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _run_single_turn_streamed, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: _run_streamed_impl, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: run, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -       Member Docstring: Run a workflow starting at the given agent. The agent will run in a loop until a final
+        output is generated. The loop runs like so:
+        1. The agent is invoked with the given input.
+        2. If there is a final output (i.e. the agent produces something of type
+            `agent.output_type`, the loop terminates.
+        3. If there's a handoff, we run the loop again, with the new agent.
+        4. Else, we run tool calls (if any), and re-run the loop.
+
+        In two cases, the agent may raise an exception:
+        1. If the max_turns is exceeded, a MaxTurnsExceeded exception is raised.
+        2. If a guardrail tripwire is triggered, a GuardrailTripwireTriggered exception is raised.
+
+        Note that only the first agent's input guardrails are run.
+
+        Args:
+            starting_agent: The starting agent to run.
+            input: The initial input to the agent. You can pass a single string for a user message,
+                or a list of input items.
+            context: The context to run the agent with.
+            max_turns: The maximum number of turns to run the agent for. A turn is defined as one
+                AI invocation (including any tool calls that might occur).
+            hooks: An object that receives callbacks on various lifecycle events.
+            run_config: Global settings for the entire agent run.
+            previous_response_id: The ID of the previous response, if using OpenAI models via the
+                Responses API, this allows you to skip passing in input from the previous turn.
+
+        Returns:
+            A run result containing all the inputs, guardrail results and the output of the last
+            agent. Agents may perform handoffs, so we don't know the specific type of the output.
+2025-05-09 18:45:54,448 - INFO -     Member Name: run_streamed, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -       Member Docstring: Run a workflow starting at the given agent in streaming mode. The returned result object
+        contains a method you can use to stream semantic events as they are generated.
+
+        The agent will run in a loop until a final output is generated. The loop runs like so:
+        1. The agent is invoked with the given input.
+        2. If there is a final output (i.e. the agent produces something of type
+            `agent.output_type`, the loop terminates.
+        3. If there's a handoff, we run the loop again, with the new agent.
+        4. Else, we run tool calls (if any), and re-run the loop.
+
+        In two cases, the agent may raise an exception:
+        1. If the max_turns is exceeded, a MaxTurnsExceeded exception is raised.
+        2. If a guardrail tripwire is triggered, a GuardrailTripwireTriggered exception is raised.
+
+        Note that only the first agent's input guardrails are run.
+
+        Args:
+            starting_agent: The starting agent to run.
+            input: The initial input to the agent. You can pass a single string for a user message,
+                or a list of input items.
+            context: The context to run the agent with.
+            max_turns: The maximum number of turns to run the agent for. A turn is defined as one
+                AI invocation (including any tool calls that might occur).
+            hooks: An object that receives callbacks on various lifecycle events.
+            run_config: Global settings for the entire agent run.
+            previous_response_id: The ID of the previous response, if using OpenAI models via the
+                Responses API, this allows you to skip passing in input from the previous turn.
+        Returns:
+            A result object that contains data about the run, as well as a method to stream events.
+2025-05-09 18:45:54,448 - INFO -     Member Name: run_sync, Type: <class 'method'>
+2025-05-09 18:45:54,448 - INFO -       Member Docstring: Run a workflow synchronously, starting at the given agent. Note that this just wraps the
+        `run` method, so it will not work if there's already an event loop (e.g. inside an async
+        function, or in a Jupyter notebook or async context like FastAPI). For those cases, use
+        the `run` method instead.
+
+        The agent will run in a loop until a final output is generated. The loop runs like so:
+        1. The agent is invoked with the given input.
+        2. If there is a final output (i.e. the agent produces something of type
+            `agent.output_type`, the loop terminates.
+        3. If there's a handoff, we run the loop again, with the new agent.
+        4. Else, we run tool calls (if any), and re-run the loop.
+
+        In two cases, the agent may raise an exception:
+        1. If the max_turns is exceeded, a MaxTurnsExceeded exception is raised.
+        2. If a guardrail tripwire is triggered, a GuardrailTripwireTriggered exception is raised.
+
+        Note that only the first agent's input guardrails are run.
+
+        Args:
+            starting_agent: The starting agent to run.
+            input: The initial input to the agent. You can pass a single string for a user message,
+                or a list of input items.
+            context: The context to run the agent with.
+            max_turns: The maximum number of turns to run the agent for. A turn is defined as one
+                AI invocation (including any tool calls that might occur).
+            hooks: An object that receives callbacks on various lifecycle events.
+            run_config: Global settings for the entire agent run.
+            previous_response_id: The ID of the previous response, if using OpenAI models via the
+                Responses API, this allows you to skip passing in input from the previous turn.
+
+        Returns:
+            A run result containing all the inputs, guardrail results and the output of the last
+            agent. Agents may perform handoffs, so we don't know the specific type of the output.
+2025-05-09 18:45:54,448 - INFO -   --- End of class 'Runner' inspection ---
+2025-05-09 18:45:54,448 - INFO - ----------------------------------------
+2025-05-09 18:45:54,448 - INFO - Name: Span, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,448 - INFO -   --- Inspecting members of class 'Span' ---
+2025-05-09 18:45:54,448 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,448 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,448 - INFO -     Member Name: ended_at, Type: <class 'property'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: error, Type: <class 'property'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: finish, Type: <class 'function'>
+2025-05-09 18:45:54,448 - INFO -       Member Docstring: Finish the span.
+
+        Args:
+            reset_current: If true, the span will be reset as the current span.
+2025-05-09 18:45:54,448 - INFO -     Member Name: parent_id, Type: <class 'property'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: set_error, Type: <class 'function'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: span_data, Type: <class 'property'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: span_id, Type: <class 'property'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: start, Type: <class 'function'>
+2025-05-09 18:45:54,448 - INFO -       Member Docstring: Start the span.
+
+        Args:
+            mark_as_current: If true, the span will be marked as the current span.
+2025-05-09 18:45:54,448 - INFO -     Member Name: started_at, Type: <class 'property'>
+2025-05-09 18:45:54,448 - INFO -     Member Name: trace_id, Type: <class 'property'>
+2025-05-09 18:45:54,448 - INFO -   --- End of class 'Span' inspection ---
+2025-05-09 18:45:54,448 - INFO - ----------------------------------------
+2025-05-09 18:45:54,448 - INFO - Name: SpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,448 - INFO -   Docstring: Represents span data in the trace.
+2025-05-09 18:45:54,448 - INFO -   --- Inspecting members of class 'SpanData' ---
+2025-05-09 18:45:54,449 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,449 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Export the span data as a dictionary.
+2025-05-09 18:45:54,449 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Return the type of the span.
+2025-05-09 18:45:54,449 - INFO -   --- End of class 'SpanData' inspection ---
+2025-05-09 18:45:54,449 - INFO - ----------------------------------------
+2025-05-09 18:45:54,449 - INFO - Name: SpanError, Type: <class 'typing_extensions._TypedDictMeta'>
+2025-05-09 18:45:54,449 - INFO -   --- Inspecting members of class 'SpanError' ---
+2025-05-09 18:45:54,449 - INFO -     Member Name: clear, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: D.clear() -> None.  Remove all items from D.
+2025-05-09 18:45:54,449 - INFO -     Member Name: copy, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: D.copy() -> a shallow copy of D
+2025-05-09 18:45:54,449 - INFO -     Member Name: fromkeys, Type: <class 'builtin_function_or_method'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Create a new dictionary with keys from iterable and values set to value.
+2025-05-09 18:45:54,449 - INFO -     Member Name: get, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Return the value for key if key is in the dictionary, else default.
+2025-05-09 18:45:54,449 - INFO -     Member Name: items, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: D.items() -> a set-like object providing a view on D's items
+2025-05-09 18:45:54,449 - INFO -     Member Name: keys, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: D.keys() -> a set-like object providing a view on D's keys
+2025-05-09 18:45:54,449 - INFO -     Member Name: pop, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: D.pop(k[,d]) -> v, remove specified key and return the corresponding value.
+
+If the key is not found, return the default if given; otherwise,
+raise a KeyError.
+2025-05-09 18:45:54,449 - INFO -     Member Name: popitem, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Remove and return a (key, value) pair as a 2-tuple.
+
+Pairs are returned in LIFO (last-in, first-out) order.
+Raises KeyError if the dict is empty.
+2025-05-09 18:45:54,449 - INFO -     Member Name: setdefault, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Insert key with a value of default if key is not in the dictionary.
+
+Return the value for key if key is in the dictionary, else default.
+2025-05-09 18:45:54,449 - INFO -     Member Name: update, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: D.update([E, ]**F) -> None.  Update D from dict/iterable E and F.
+If E is present and has a .keys() method, then does:  for k in E: D[k] = E[k]
+If E is present and lacks a .keys() method, then does:  for k, v in E: D[k] = v
+In either case, this is followed by: for k in F:  D[k] = F[k]
+2025-05-09 18:45:54,449 - INFO -     Member Name: values, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: D.values() -> an object providing a view on D's values
+2025-05-09 18:45:54,449 - INFO -   --- End of class 'SpanError' inspection ---
+2025-05-09 18:45:54,449 - INFO - ----------------------------------------
+2025-05-09 18:45:54,449 - INFO - Name: SpeechGroupSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,449 - INFO -   Docstring: Represents a Speech Group Span in the trace.
+2025-05-09 18:45:54,449 - INFO -   --- Inspecting members of class 'SpeechGroupSpanData' ---
+2025-05-09 18:45:54,449 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,449 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,449 - INFO -     Member Name: input, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,449 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,449 - INFO -   --- End of class 'SpeechGroupSpanData' inspection ---
+2025-05-09 18:45:54,449 - INFO - ----------------------------------------
+2025-05-09 18:45:54,449 - INFO - Name: SpeechSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,449 - INFO -   Docstring: Represents a Speech Span in the trace.
+    Includes input, output, model, model configuration, and first content timestamp.
+2025-05-09 18:45:54,449 - INFO -   --- Inspecting members of class 'SpeechSpanData' ---
+2025-05-09 18:45:54,449 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,449 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,449 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,449 - INFO -     Member Name: first_content_at, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,449 - INFO -     Member Name: input, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,449 - INFO -     Member Name: model, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,450 - INFO -     Member Name: model_config, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,450 - INFO -     Member Name: output, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,450 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,450 - INFO -   --- End of class 'SpeechSpanData' inspection ---
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: StreamEvent, Type: <class 'typing._UnionGenericAlias'>
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: TContext, Type: <class 'typing.TypeVar'>
+2025-05-09 18:45:54,450 - INFO -   Docstring: Type variable.
+
+The preferred way to construct a type variable is via the dedicated
+syntax for generic functions, classes, and type aliases::
+
+    class Sequence[T]:  # T is a TypeVar
+        ...
+
+This syntax can also be used to create bound and constrained type
+variables::
+
+    # S is a TypeVar bound to str
+    class StrSequence[S: str]:
+        ...
+
+    # A is a TypeVar constrained to str or bytes
+    class StrOrBytesSequence[A: (str, bytes)]:
+        ...
+
+However, if desired, reusable type variables can also be constructed
+manually, like so::
+
+   T = TypeVar('T')  # Can be anything
+   S = TypeVar('S', bound=str)  # Can be any subtype of str
+   A = TypeVar('A', str, bytes)  # Must be exactly str or bytes
+
+Type variables exist primarily for the benefit of static type
+checkers.  They serve as the parameters for generic types as well
+as for generic function and type alias definitions.
+
+The variance of type variables is inferred by type checkers when they
+are created through the type parameter syntax and when
+``infer_variance=True`` is passed. Manually created type variables may
+be explicitly marked covariant or contravariant by passing
+``covariant=True`` or ``contravariant=True``. By default, manually
+created type variables are invariant. See PEP 484 and PEP 695 for more
+details.
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: TResponseInputItem, Type: <class 'typing._UnionGenericAlias'>
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: Tool, Type: <class 'typing._UnionGenericAlias'>
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: ToolCallItem, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,450 - INFO -   Docstring: Represents a tool call e.g. a function call or computer action call.
+2025-05-09 18:45:54,450 - INFO -   --- Inspecting members of class 'ToolCallItem' ---
+2025-05-09 18:45:54,450 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,450 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,450 - INFO -     Member Name: to_input_item, Type: <class 'function'>
+2025-05-09 18:45:54,450 - INFO -       Member Docstring: Converts this item into an input item suitable for passing to the model.
+2025-05-09 18:45:54,450 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,450 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,450 - INFO -   --- End of class 'ToolCallItem' inspection ---
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: ToolCallOutputItem, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,450 - INFO -   Docstring: Represents the output of a tool call.
+2025-05-09 18:45:54,450 - INFO -   --- Inspecting members of class 'ToolCallOutputItem' ---
+2025-05-09 18:45:54,450 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,450 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,450 - INFO -     Member Name: to_input_item, Type: <class 'function'>
+2025-05-09 18:45:54,450 - INFO -       Member Docstring: Converts this item into an input item suitable for passing to the model.
+2025-05-09 18:45:54,450 - INFO -     Member Name: type, Type: <class 'str'>
+2025-05-09 18:45:54,450 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,450 - INFO -   --- End of class 'ToolCallOutputItem' inspection ---
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: ToolsToFinalOutputFunction, Type: <class 'typing._CallableGenericAlias'>
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: ToolsToFinalOutputResult, Type: <class 'type'>
+2025-05-09 18:45:54,450 - INFO -   Docstring: ToolsToFinalOutputResult(is_final_output: 'bool', final_output: 'Any | None' = None)
+2025-05-09 18:45:54,450 - INFO -   --- Inspecting members of class 'ToolsToFinalOutputResult' ---
+2025-05-09 18:45:54,450 - INFO -     Member Name: final_output, Type: <class 'NoneType'>
+2025-05-09 18:45:54,450 - INFO -   --- End of class 'ToolsToFinalOutputResult' inspection ---
+2025-05-09 18:45:54,450 - INFO - ----------------------------------------
+2025-05-09 18:45:54,450 - INFO - Name: Trace, Type: <class 'type'>
+2025-05-09 18:45:54,450 - INFO -   Docstring: A trace is the root level object that tracing creates. It represents a logical "workflow".
+2025-05-09 18:45:54,450 - INFO -   --- Inspecting members of class 'Trace' ---
+2025-05-09 18:45:54,450 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,450 - INFO -       Member Docstring: Export the trace as a dictionary.
+2025-05-09 18:45:54,450 - INFO -     Member Name: finish, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Finish the trace.
+
+        Args:
+            reset_current: If true, the trace will be reset as the current trace.
+2025-05-09 18:45:54,451 - INFO -     Member Name: name, Type: <class 'property'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: The name of the workflow being traced.
+2025-05-09 18:45:54,451 - INFO -     Member Name: start, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Start the trace.
+
+        Args:
+            mark_as_current: If true, the trace will be marked as the current trace.
+2025-05-09 18:45:54,451 - INFO -     Member Name: trace_id, Type: <class 'property'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: The trace ID.
+2025-05-09 18:45:54,451 - INFO -   --- End of class 'Trace' inspection ---
+2025-05-09 18:45:54,451 - INFO - ----------------------------------------
+2025-05-09 18:45:54,451 - INFO - Name: TracingProcessor, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,451 - INFO -   Docstring: Interface for processing spans.
+2025-05-09 18:45:54,451 - INFO -   --- Inspecting members of class 'TracingProcessor' ---
+2025-05-09 18:45:54,451 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,451 - INFO -     Member Name: force_flush, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Forces an immediate flush of all queued spans/traces.
+2025-05-09 18:45:54,451 - INFO -     Member Name: on_span_end, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Called when a span is finished. Should not block or raise exceptions.
+
+        Args:
+            span: The span that finished.
+2025-05-09 18:45:54,451 - INFO -     Member Name: on_span_start, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Called when a span is started.
+
+        Args:
+            span: The span that started.
+2025-05-09 18:45:54,451 - INFO -     Member Name: on_trace_end, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Called when a trace is finished.
+
+        Args:
+            trace: The trace that started.
+2025-05-09 18:45:54,451 - INFO -     Member Name: on_trace_start, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Called when a trace is started.
+
+        Args:
+            trace: The trace that started.
+2025-05-09 18:45:54,451 - INFO -     Member Name: shutdown, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Called when the application stops.
+2025-05-09 18:45:54,451 - INFO -   --- End of class 'TracingProcessor' inspection ---
+2025-05-09 18:45:54,451 - INFO - ----------------------------------------
+2025-05-09 18:45:54,451 - INFO - Name: TranscriptionSpanData, Type: <class 'abc.ABCMeta'>
+2025-05-09 18:45:54,451 - INFO -   Docstring: Represents a Transcription Span in the trace.
+    Includes input, output, model, and model configuration.
+2025-05-09 18:45:54,451 - INFO -   --- Inspecting members of class 'TranscriptionSpanData' ---
+2025-05-09 18:45:54,451 - INFO -     Member Name: _abc_impl, Type: <class '_abc._abc_data'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: Internal state held by ABC machinery.
+2025-05-09 18:45:54,451 - INFO -     Member Name: export, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -     Member Name: input, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,451 - INFO -     Member Name: model, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,451 - INFO -     Member Name: model_config, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,451 - INFO -     Member Name: output, Type: <class 'member_descriptor'>
+2025-05-09 18:45:54,451 - INFO -     Member Name: type, Type: <class 'property'>
+2025-05-09 18:45:54,451 - INFO -   --- End of class 'TranscriptionSpanData' inspection ---
+2025-05-09 18:45:54,451 - INFO - ----------------------------------------
+2025-05-09 18:45:54,451 - INFO - Name: Usage, Type: <class 'type'>
+2025-05-09 18:45:54,451 - INFO -   Docstring: Usage(requests: int = 0, input_tokens: int = 0, output_tokens: int = 0, total_tokens: int = 0)
+2025-05-09 18:45:54,451 - INFO -   --- Inspecting members of class 'Usage' ---
+2025-05-09 18:45:54,451 - INFO -     Member Name: add, Type: <class 'function'>
+2025-05-09 18:45:54,451 - INFO -     Member Name: input_tokens, Type: <class 'int'>
+2025-05-09 18:45:54,451 - INFO -       Member Docstring: int([x]) -> integer
+int(x, base=10) -> integer
+
+Convert a number or string to an integer, or return 0 if no arguments
+are given.  If x is a number, return x.__int__().  For floating point
+numbers, this truncates towards zero.
+
+If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.  The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.
+>>> int('0b100', base=0)
+4
+2025-05-09 18:45:54,451 - INFO -     Member Name: output_tokens, Type: <class 'int'>
+2025-05-09 18:45:54,452 - INFO -       Member Docstring: int([x]) -> integer
+int(x, base=10) -> integer
+
+Convert a number or string to an integer, or return 0 if no arguments
+are given.  If x is a number, return x.__int__().  For floating point
+numbers, this truncates towards zero.
+
+If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.  The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.
+>>> int('0b100', base=0)
+4
+2025-05-09 18:45:54,452 - INFO -     Member Name: requests, Type: <class 'int'>
+2025-05-09 18:45:54,452 - INFO -       Member Docstring: int([x]) -> integer
+int(x, base=10) -> integer
+
+Convert a number or string to an integer, or return 0 if no arguments
+are given.  If x is a number, return x.__int__().  For floating point
+numbers, this truncates towards zero.
+
+If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.  The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.
+>>> int('0b100', base=0)
+4
+2025-05-09 18:45:54,452 - INFO -     Member Name: total_tokens, Type: <class 'int'>
+2025-05-09 18:45:54,452 - INFO -       Member Docstring: int([x]) -> integer
+int(x, base=10) -> integer
+
+Convert a number or string to an integer, or return 0 if no arguments
+are given.  If x is a number, return x.__int__().  For floating point
+numbers, this truncates towards zero.
+
+If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.  The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.
+>>> int('0b100', base=0)
+4
+2025-05-09 18:45:54,452 - INFO -   --- End of class 'Usage' inspection ---
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: UserError, Type: <class 'type'>
+2025-05-09 18:45:54,452 - INFO -   Docstring: Exception raised when the user makes an error using the SDK.
+2025-05-09 18:45:54,452 - INFO -   --- Inspecting members of class 'UserError' ---
+2025-05-09 18:45:54,452 - INFO -     Member Name: add_note, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,452 - INFO -       Member Docstring: Exception.add_note(note) --
+    add a note to the exception
+2025-05-09 18:45:54,452 - INFO -     Member Name: args, Type: <class 'getset_descriptor'>
+2025-05-09 18:45:54,452 - INFO -     Member Name: with_traceback, Type: <class 'method_descriptor'>
+2025-05-09 18:45:54,452 - INFO -       Member Docstring: Exception.with_traceback(tb) --
+    set self.__traceback__ to tb and return self.
+2025-05-09 18:45:54,452 - INFO -   --- End of class 'UserError' inspection ---
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: WebSearchTool, Type: <class 'type'>
+2025-05-09 18:45:54,452 - INFO -   Docstring: A hosted tool that lets the LLM search the web. Currently only supported with OpenAI models,
+    using the Responses API.
+2025-05-09 18:45:54,452 - INFO -   --- Inspecting members of class 'WebSearchTool' ---
+2025-05-09 18:45:54,452 - INFO -     Member Name: name, Type: <class 'property'>
+2025-05-09 18:45:54,452 - INFO -     Member Name: search_context_size, Type: <class 'str'>
+2025-05-09 18:45:54,452 - INFO -       Member Docstring: str(object='') -> str
+str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+Create a new string object from the given object. If encoding or
+errors is specified, then the object must expose a data buffer
+that will be decoded using the given encoding and error handler.
+Otherwise, returns the result of object.__str__() (if defined)
+or repr(object).
+encoding defaults to sys.getdefaultencoding().
+errors defaults to 'strict'.
+2025-05-09 18:45:54,452 - INFO -     Member Name: user_location, Type: <class 'NoneType'>
+2025-05-09 18:45:54,452 - INFO -   --- End of class 'WebSearchTool' inspection ---
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: _config, Type: <class 'module'>
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: _debug, Type: <class 'module'>
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: _run_impl, Type: <class 'module'>
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: add_trace_processor, Type: <class 'function'>
+2025-05-09 18:45:54,452 - INFO -   Docstring: Adds a new trace processor. This processor will receive all traces/spans.
+2025-05-09 18:45:54,452 - INFO -   Signature: (span_processor: agents.tracing.processor_interface.TracingProcessor) -> None
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: agent, Type: <class 'module'>
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: agent_output, Type: <class 'module'>
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: agent_span, Type: <class 'function'>
+2025-05-09 18:45:54,452 - INFO -   Docstring: Create a new agent span. The span will not be started automatically, you should either do
+    `with agent_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    Args:
+        name: The name of the agent.
+        handoffs: Optional list of agent names to which this agent could hand off control.
+        tools: Optional list of tool names available to this agent.
+        output_type: Optional name of the output type produced by the agent.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+
+    Returns:
+        The newly created agent span.
+2025-05-09 18:45:54,452 - INFO -   Signature: (name: 'str', handoffs: 'list[str] | None' = None, tools: 'list[str] | None' = None, output_type: 'str | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[AgentSpanData]'
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: computer, Type: <class 'module'>
+2025-05-09 18:45:54,452 - INFO - ----------------------------------------
+2025-05-09 18:45:54,452 - INFO - Name: custom_span, Type: <class 'function'>
+2025-05-09 18:45:54,452 - INFO -   Docstring: Create a new custom span, to which you can add your own metadata. The span will not be
+    started automatically, you should either do `with custom_span() ...` or call
+    `span.start()` + `span.finish()` manually.
+
+    Args:
+        name: The name of the custom span.
+        data: Arbitrary structured data to associate with the span.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+
+    Returns:
+        The newly created custom span.
+2025-05-09 18:45:54,453 - INFO -   Signature: (name: 'str', data: 'dict[str, Any] | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[CustomSpanData]'
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: default_tool_error_function, Type: <class 'function'>
+2025-05-09 18:45:54,453 - INFO -   Docstring: The default tool error function, which just returns a generic error message.
+2025-05-09 18:45:54,453 - INFO -   Signature: (ctx: 'RunContextWrapper[Any]', error: 'Exception') -> 'str'
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: enable_verbose_stdout_logging, Type: <class 'function'>
+2025-05-09 18:45:54,453 - INFO -   Docstring: Enables verbose logging to stdout. This is useful for debugging.
+2025-05-09 18:45:54,453 - INFO -   Signature: ()
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: exceptions, Type: <class 'module'>
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: function_schema, Type: <class 'module'>
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: function_span, Type: <class 'function'>
+2025-05-09 18:45:54,453 - INFO -   Docstring: Create a new function span. The span will not be started automatically, you should either do
+    `with function_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    Args:
+        name: The name of the function.
+        input: The input to the function.
+        output: The output of the function.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+
+    Returns:
+        The newly created function span.
+2025-05-09 18:45:54,453 - INFO -   Signature: (name: 'str', input: 'str | None' = None, output: 'str | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[FunctionSpanData]'
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: function_tool, Type: <class 'function'>
+2025-05-09 18:45:54,453 - INFO -   Docstring: Decorator to create a FunctionTool from a function. By default, we will:
+    1. Parse the function signature to create a JSON schema for the tool's parameters.
+    2. Use the function's docstring to populate the tool's description.
+    3. Use the function's docstring to populate argument descriptions.
+    The docstring style is detected automatically, but you can override it.
+
+    If the function takes a `RunContextWrapper` as the first argument, it *must* match the
+    context type of the agent that uses the tool.
+
+    Args:
+        func: The function to wrap.
+        name_override: If provided, use this name for the tool instead of the function's name.
+        description_override: If provided, use this description for the tool instead of the
+            function's docstring.
+        docstring_style: If provided, use this style for the tool's docstring. If not provided,
+            we will attempt to auto-detect the style.
+        use_docstring_info: If True, use the function's docstring to populate the tool's
+            description and argument descriptions.
+        failure_error_function: If provided, use this function to generate an error message when
+            the tool call fails. The error message is sent to the LLM. If you pass None, then no
+            error message will be sent and instead an Exception will be raised.
+        strict_mode: Whether to enable strict mode for the tool's JSON schema. We *strongly*
+            recommend setting this to True, as it increases the likelihood of correct JSON input.
+            If False, it allows non-strict JSON schemas. For example, if a parameter has a default
+            value, it will be optional, additional properties are allowed, etc. See here for more:
+            https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#supported-schemas
+2025-05-09 18:45:54,453 - INFO -   Signature: (func: 'ToolFunction[...] | None' = None, *, name_override: 'str | None' = None, description_override: 'str | None' = None, docstring_style: 'DocstringStyle | None' = None, use_docstring_info: 'bool' = True, failure_error_function: 'ToolErrorFunction | None' = <function default_tool_error_function at 0x7f5274ed9440>, strict_mode: 'bool' = True) -> 'FunctionTool | Callable[[ToolFunction[...]], FunctionTool]'
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: gen_span_id, Type: <class 'function'>
+2025-05-09 18:45:54,453 - INFO -   Docstring: Generates a new span ID.
+2025-05-09 18:45:54,453 - INFO -   Signature: () -> str
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: gen_trace_id, Type: <class 'function'>
+2025-05-09 18:45:54,453 - INFO -   Docstring: Generates a new trace ID.
+2025-05-09 18:45:54,453 - INFO -   Signature: () -> str
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: generation_span, Type: <class 'function'>
+2025-05-09 18:45:54,453 - INFO -   Docstring: Create a new generation span. The span will not be started automatically, you should either
+    do `with generation_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    This span captures the details of a model generation, including the
+    input message sequence, any generated outputs, the model name and
+    configuration, and usage data. If you only need to capture a model
+    response identifier, use `response_span()` instead.
+
+    Args:
+        input: The sequence of input messages sent to the model.
+        output: The sequence of output messages received from the model.
+        model: The model identifier used for the generation.
+        model_config: The model configuration (hyperparameters) used.
+        usage: A dictionary of usage information (input tokens, output tokens, etc.).
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+
+    Returns:
+        The newly created generation span.
+2025-05-09 18:45:54,453 - INFO -   Signature: (input: 'Sequence[Mapping[str, Any]] | None' = None, output: 'Sequence[Mapping[str, Any]] | None' = None, model: 'str | None' = None, model_config: 'Mapping[str, Any] | None' = None, usage: 'dict[str, Any] | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[GenerationSpanData]'
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,453 - INFO - Name: get_current_span, Type: <class 'function'>
+2025-05-09 18:45:54,453 - INFO -   Docstring: Returns the currently active span, if present.
+2025-05-09 18:45:54,453 - INFO -   Signature: () -> 'Span[Any] | None'
+2025-05-09 18:45:54,453 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: get_current_trace, Type: <class 'function'>
+2025-05-09 18:45:54,454 - INFO -   Docstring: Returns the currently active trace, if present.
+2025-05-09 18:45:54,454 - INFO -   Signature: () -> 'Trace | None'
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: guardrail, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: guardrail_span, Type: <class 'function'>
+2025-05-09 18:45:54,454 - INFO -   Docstring: Create a new guardrail span. The span will not be started automatically, you should either
+    do `with guardrail_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    Args:
+        name: The name of the guardrail.
+        triggered: Whether the guardrail was triggered.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+2025-05-09 18:45:54,454 - INFO -   Signature: (name: 'str', triggered: 'bool' = False, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[GuardrailSpanData]'
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: handoff, Type: <class 'function'>
+2025-05-09 18:45:54,454 - INFO -   Docstring: Create a handoff from an agent.
+
+    Args:
+        agent: The agent to handoff to, or a function that returns an agent.
+        tool_name_override: Optional override for the name of the tool that represents the handoff.
+        tool_description_override: Optional override for the description of the tool that
+            represents the handoff.
+        on_handoff: A function that runs when the handoff is invoked.
+        input_type: the type of the input to the handoff. If provided, the input will be validated
+            against this type. Only relevant if you pass a function that takes an input.
+        input_filter: a function that filters the inputs that are passed to the next agent.
+2025-05-09 18:45:54,454 - INFO -   Signature: (agent: 'Agent[TContext]', tool_name_override: 'str | None' = None, tool_description_override: 'str | None' = None, on_handoff: 'OnHandoffWithInput[THandoffInput] | OnHandoffWithoutInput | None' = None, input_type: 'type[THandoffInput] | None' = None, input_filter: 'Callable[[HandoffInputData], HandoffInputData] | None' = None) -> 'Handoff[TContext]'
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: handoff_span, Type: <class 'function'>
+2025-05-09 18:45:54,454 - INFO -   Docstring: Create a new handoff span. The span will not be started automatically, you should either do
+    `with handoff_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    Args:
+        from_agent: The name of the agent that is handing off.
+        to_agent: The name of the agent that is receiving the handoff.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+
+    Returns:
+        The newly created handoff span.
+2025-05-09 18:45:54,454 - INFO -   Signature: (from_agent: 'str | None' = None, to_agent: 'str | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[HandoffSpanData]'
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: handoffs, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: input_guardrail, Type: <class 'function'>
+2025-05-09 18:45:54,454 - INFO -   Docstring: Decorator that transforms a sync or async function into an `InputGuardrail`.
+    It can be used directly (no parentheses) or with keyword args, e.g.:
+
+        @input_guardrail
+        def my_sync_guardrail(...): ...
+
+        @input_guardrail(name="guardrail_name")
+        async def my_async_guardrail(...): ...
+2025-05-09 18:45:54,454 - INFO -   Signature: (func: '_InputGuardrailFuncSync[TContext_co] | _InputGuardrailFuncAsync[TContext_co] | None' = None, *, name: 'str | None' = None) -> 'InputGuardrail[TContext_co] | Callable[[_InputGuardrailFuncSync[TContext_co] | _InputGuardrailFuncAsync[TContext_co]], InputGuardrail[TContext_co]]'
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: items, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: lifecycle, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: logger, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: logging, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO -   Docstring: Logging package for Python. Based on PEP 282 and comments thereto in
+comp.lang.python.
+
+Copyright (C) 2001-2022 Vinay Sajip. All Rights Reserved.
+
+To use, simply 'import logging' and log away!
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: mcp, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: mcp_tools_span, Type: <class 'function'>
+2025-05-09 18:45:54,454 - INFO -   Docstring: Create a new MCP list tools span. The span will not be started automatically, you should
+    either do `with mcp_tools_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    Args:
+        server: The name of the MCP server.
+        result: The result of the MCP list tools call.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+2025-05-09 18:45:54,454 - INFO -   Signature: (server: 'str | None' = None, result: 'list[str] | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[MCPListToolsSpanData]'
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: model_settings, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: models, Type: <class 'module'>
+2025-05-09 18:45:54,454 - INFO - ----------------------------------------
+2025-05-09 18:45:54,454 - INFO - Name: output_guardrail, Type: <class 'function'>
+2025-05-09 18:45:54,454 - INFO -   Docstring: Decorator that transforms a sync or async function into an `OutputGuardrail`.
+    It can be used directly (no parentheses) or with keyword args, e.g.:
+
+        @output_guardrail
+        def my_sync_guardrail(...): ...
+
+        @output_guardrail(name="guardrail_name")
+        async def my_async_guardrail(...): ...
+2025-05-09 18:45:54,455 - INFO -   Signature: (func: '_OutputGuardrailFuncSync[TContext_co] | _OutputGuardrailFuncAsync[TContext_co] | None' = None, *, name: 'str | None' = None) -> 'OutputGuardrail[TContext_co] | Callable[[_OutputGuardrailFuncSync[TContext_co] | _OutputGuardrailFuncAsync[TContext_co]], OutputGuardrail[TContext_co]]'
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: result, Type: <class 'module'>
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: run, Type: <class 'module'>
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: run_context, Type: <class 'module'>
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: set_default_openai_api, Type: <class 'function'>
+2025-05-09 18:45:54,455 - INFO -   Docstring: Set the default API to use for OpenAI LLM requests. By default, we will use the responses API
+    but you can set this to use the chat completions API instead.
+2025-05-09 18:45:54,455 - INFO -   Signature: (api: Literal['chat_completions', 'responses']) -> None
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: set_default_openai_client, Type: <class 'function'>
+2025-05-09 18:45:54,455 - INFO -   Docstring: Set the default OpenAI client to use for LLM requests and/or tracing. If provided, this
+    client will be used instead of the default OpenAI client.
+
+    Args:
+        client: The OpenAI client to use.
+        use_for_tracing: Whether to use the API key from this client for uploading traces. If False,
+            you'll either need to set the OPENAI_API_KEY environment variable or call
+            set_tracing_export_api_key() with the API key you want to use for tracing.
+2025-05-09 18:45:54,455 - INFO -   Signature: (client: openai.AsyncOpenAI, use_for_tracing: bool = True) -> None
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: set_default_openai_key, Type: <class 'function'>
+2025-05-09 18:45:54,455 - INFO -   Docstring: Set the default OpenAI API key to use for LLM requests (and optionally tracing(). This is
+    only necessary if the OPENAI_API_KEY environment variable is not already set.
+
+    If provided, this key will be used instead of the OPENAI_API_KEY environment variable.
+
+    Args:
+        key: The OpenAI key to use.
+        use_for_tracing: Whether to also use this key to send traces to OpenAI. Defaults to True
+            If False, you'll either need to set the OPENAI_API_KEY environment variable or call
+            set_tracing_export_api_key() with the API key you want to use for tracing.
+2025-05-09 18:45:54,455 - INFO -   Signature: (key: str, use_for_tracing: bool = True) -> None
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: set_trace_processors, Type: <class 'function'>
+2025-05-09 18:45:54,455 - INFO -   Docstring: Set the list of trace processors. This will replace the current list of processors.
+2025-05-09 18:45:54,455 - INFO -   Signature: (processors: list[agents.tracing.processor_interface.TracingProcessor]) -> None
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: set_tracing_disabled, Type: <class 'function'>
+2025-05-09 18:45:54,455 - INFO -   Docstring: Set whether tracing is globally disabled.
+2025-05-09 18:45:54,455 - INFO -   Signature: (disabled: bool) -> None
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: set_tracing_export_api_key, Type: <class 'function'>
+2025-05-09 18:45:54,455 - INFO -   Docstring: Set the OpenAI API key for the backend exporter.
+2025-05-09 18:45:54,455 - INFO -   Signature: (api_key: str) -> None
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: speech_group_span, Type: <class 'function'>
+2025-05-09 18:45:54,455 - INFO -   Docstring: Create a new speech group span. The span will not be started automatically, you should
+    either do `with speech_group_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    Args:
+        input: The input text used for the speech request.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+2025-05-09 18:45:54,455 - INFO -   Signature: (input: 'str | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[SpeechGroupSpanData]'
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: speech_span, Type: <class 'function'>
+2025-05-09 18:45:54,455 - INFO -   Docstring: Create a new speech span. The span will not be started automatically, you should either do
+    `with speech_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    Args:
+        model: The name of the model used for the text-to-speech.
+        input: The text input of the text-to-speech.
+        output: The audio output of the text-to-speech as base64 encoded string of PCM audio bytes.
+        output_format: The format of the audio output (defaults to "pcm").
+        model_config: The model configuration (hyperparameters) used.
+        first_content_at: The time of the first byte of the audio output.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+2025-05-09 18:45:54,455 - INFO -   Signature: (model: 'str | None' = None, input: 'str | None' = None, output: 'str | None' = None, output_format: 'str | None' = 'pcm', model_config: 'Mapping[str, Any] | None' = None, first_content_at: 'str | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[SpeechSpanData]'
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: stream_events, Type: <class 'module'>
+2025-05-09 18:45:54,455 - INFO - ----------------------------------------
+2025-05-09 18:45:54,455 - INFO - Name: strict_schema, Type: <class 'module'>
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+2025-05-09 18:45:54,456 - INFO - Name: sys, Type: <class 'module'>
+2025-05-09 18:45:54,456 - INFO -   Docstring: This module provides access to some objects used or maintained by the
+interpreter and to functions that interact strongly with the interpreter.
+
+Dynamic objects:
+
+argv -- command line arguments; argv[0] is the script pathname if known
+path -- module search path; path[0] is the script directory, else ''
+modules -- dictionary of loaded modules
+
+displayhook -- called to show results in an interactive session
+excepthook -- called to handle any uncaught exception other than SystemExit
+  To customize printing in an interactive session or to install a custom
+  top-level exception handler, assign other functions to replace these.
+
+stdin -- standard input file object; used by input()
+stdout -- standard output file object; used by print()
+stderr -- standard error object; used for error messages
+  By assigning other file objects (or objects that behave like files)
+  to these, it is possible to redirect all of the interpreter's I/O.
+
+last_exc - the last uncaught exception
+  Only available in an interactive session after a
+  traceback has been printed.
+last_type -- type of last uncaught exception
+last_value -- value of last uncaught exception
+last_traceback -- traceback of last uncaught exception
+  These three are the (deprecated) legacy representation of last_exc.
+
+Static objects:
+
+builtin_module_names -- tuple of module names built into this interpreter
+copyright -- copyright notice pertaining to this interpreter
+exec_prefix -- prefix used to find the machine-specific Python library
+executable -- absolute path of the executable binary of the Python interpreter
+float_info -- a named tuple with information about the float implementation.
+float_repr_style -- string indicating the style of repr() output for floats
+hash_info -- a named tuple with information about the hash algorithm.
+hexversion -- version information encoded as a single integer
+implementation -- Python implementation information.
+int_info -- a named tuple with information about the int implementation.
+maxsize -- the largest supported length of containers.
+maxunicode -- the value of the largest Unicode code point
+platform -- platform identifier
+prefix -- prefix used to find the Python library
+thread_info -- a named tuple with information about the thread implementation.
+version -- the version of this interpreter as a string
+version_info -- version information as a named tuple
+__stdin__ -- the original stdin; don't touch!
+__stdout__ -- the original stdout; don't touch!
+__stderr__ -- the original stderr; don't touch!
+__displayhook__ -- the original displayhook; don't touch!
+__excepthook__ -- the original excepthook; don't touch!
+
+Functions:
+
+displayhook() -- print an object to the screen, and save it in builtins._
+excepthook() -- print an exception and its traceback to sys.stderr
+exception() -- return the current thread's active exception
+exc_info() -- return information about the current thread's active exception
+exit() -- exit the interpreter by raising SystemExit
+getdlopenflags() -- returns flags to be used for dlopen() calls
+getprofile() -- get the global profiling function
+getrefcount() -- return the reference count for an object (plus one :-)
+getrecursionlimit() -- return the max recursion depth for the interpreter
+getsizeof() -- return the size of an object in bytes
+gettrace() -- get the global debug tracing function
+setdlopenflags() -- set the flags to be used for dlopen() calls
+setprofile() -- set the global profiling function
+setrecursionlimit() -- set the max recursion depth for the interpreter
+settrace() -- set the global debug tracing function
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+2025-05-09 18:45:54,456 - INFO - Name: tool, Type: <class 'module'>
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+2025-05-09 18:45:54,456 - INFO - Name: trace, Type: <class 'function'>
+2025-05-09 18:45:54,456 - INFO -   Docstring: Create a new trace. The trace will not be started automatically; you should either use
+    it as a context manager (`with trace(...):`) or call `trace.start()` + `trace.finish()`
+    manually.
+
+    In addition to the workflow name and optional grouping identifier, you can provide
+    an arbitrary metadata dictionary to attach additional user-defined information to
+    the trace.
+
+    Args:
+        workflow_name: The name of the logical app or workflow. For example, you might provide
+            "code_bot" for a coding agent, or "customer_support_agent" for a customer support agent.
+        trace_id: The ID of the trace. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_trace_id()` to generate a trace ID, to guarantee that IDs are
+            correctly formatted.
+        group_id: Optional grouping identifier to link multiple traces from the same conversation
+            or process. For instance, you might use a chat thread ID.
+        metadata: Optional dictionary of additional metadata to attach to the trace.
+        disabled: If True, we will return a Trace but the Trace will not be recorded. This will
+            not be checked if there's an existing trace and `even_if_trace_running` is True.
+
+    Returns:
+        The newly created trace object.
+2025-05-09 18:45:54,456 - INFO -   Signature: (workflow_name: 'str', trace_id: 'str | None' = None, group_id: 'str | None' = None, metadata: 'dict[str, Any] | None' = None, disabled: 'bool' = False) -> 'Trace'
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+2025-05-09 18:45:54,456 - INFO - Name: tracing, Type: <class 'module'>
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+2025-05-09 18:45:54,456 - INFO - Name: transcription_span, Type: <class 'function'>
+2025-05-09 18:45:54,456 - INFO -   Docstring: Create a new transcription span. The span will not be started automatically, you should
+    either do `with transcription_span() ...` or call `span.start()` + `span.finish()` manually.
+
+    Args:
+        model: The name of the model used for the speech-to-text.
+        input: The audio input of the speech-to-text transcription, as a base64 encoded string of
+            audio bytes.
+        input_format: The format of the audio input (defaults to "pcm").
+        output: The output of the speech-to-text transcription.
+        model_config: The model configuration (hyperparameters) used.
+        span_id: The ID of the span. Optional. If not provided, we will generate an ID. We
+            recommend using `util.gen_span_id()` to generate a span ID, to guarantee that IDs are
+            correctly formatted.
+        parent: The parent span or trace. If not provided, we will automatically use the current
+            trace/span as the parent.
+        disabled: If True, we will return a Span but the Span will not be recorded.
+
+    Returns:
+        The newly created speech-to-text span.
+2025-05-09 18:45:54,456 - INFO -   Signature: (model: 'str | None' = None, input: 'str | None' = None, input_format: 'str | None' = 'pcm', output: 'str | None' = None, model_config: 'Mapping[str, Any] | None' = None, span_id: 'str | None' = None, parent: 'Trace | Span[Any] | None' = None, disabled: 'bool' = False) -> 'Span[TranscriptionSpanData]'
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+2025-05-09 18:45:54,456 - INFO - Name: usage, Type: <class 'module'>
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+2025-05-09 18:45:54,456 - INFO - Name: util, Type: <class 'module'>
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+2025-05-09 18:45:54,456 - INFO - Name: version, Type: <class 'module'>
+2025-05-09 18:45:54,456 - INFO - ----------------------------------------
+
+what does that tell us about agents that is useful for our history problem

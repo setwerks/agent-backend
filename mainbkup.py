@@ -3,6 +3,8 @@ import json
 import logging
 import requests
 import uvicorn
+import agents
+import inspect
 from datetime import datetime
 from uuid import uuid4
 from fastapi import FastAPI, Request, UploadFile, File
@@ -11,7 +13,11 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Optional, List
 from agents import Agent, Runner, function_tool, RunConfig
+#from agents.types import MessageInput
 
+for name, obj in inspect.getmembers(agents):
+    if not name.startswith("__"):
+        logging.info(f"{name}: {obj}")
 # Load environment variables
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -145,30 +151,31 @@ async def start_quest(request: Request):
         history = session.get("chat_history", [])
         quest_state = session.get("quest_state", {})
 
-        #logging.info(f"Fetched session for quest_id={quest_id}")
-        #logging.info(f"Chat history (length={len(history)}): {history}")
-        #logging.info(f"Quest state: {quest_state}")
+        # 🔍 Log fetched session data
+        logging.info(f"Fetched session for quest_id={quest_id}")
+        logging.info(f"Chat history (length={len(history)}): {history}")
+        logging.info(f"Quest state: {quest_state}")
 
-        # Combine prior history with new message
-        input_items = [
-            {"role": m["role"], "content": m["content"]}
-            for m in history if "role" in m and "content" in m
-        ] + [{"role": "user", "content": message}]
 
         result = await Runner.run(
             starting_agent=quest_agent,
-            input=input_items,
-            context={"quest_state": quest_state},  # Non-visible state only
+            input=message,
+            context={ "chat_history": history_items },
             run_config=RunConfig(workflow_name="quest_workflow")
         )
 
-        updated_history = input_items + [
+        # Log the agent result
+        logging.info(f"Agent output: {result.final_output}")
+
+        # Append new message to history
+        updated_history = history + [
+            {"role": "user", "content": message},
             {"role": "assistant", "content": result.final_output}
         ]
 
         save_session(quest_id, quest_state, updated_history)
 
-        return {"message": result.final_output}
+        return { "message": result.final_output }
 
     except Exception as e:
         logging.exception("Quest agent failed")
