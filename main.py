@@ -147,7 +147,7 @@ async def start_quest(request: Request):
         result = await Runner.run(
             quest_agent,
             message,
-            messages=history,
+            history=history,  # ✅ Correct
             run_config=RunConfig(workflow_name="quest_workflow")
         )
 
