@@ -53,17 +53,17 @@ def geocode_location(location: str) -> str:
 
 # === TOOL 2: Create quest ===
 class QuestData(BaseModel):
-    want_or_have: Optional[str]
-    description: Optional[str]
-    general_location: Optional[str]
-    location_confirmed: Optional[bool]
-    distance: Optional[float]
-    distance_unit: Optional[str]
-    price: Optional[float]
-    photos: Optional[List[str]] = None
+    want_or_have: Optional[str] = None
+    description: Optional[str] = None
+    general_location: Optional[str] = None
+    location_confirmed: Optional[bool] = None
+    distance: Optional[float] = None
+    distance_unit: Optional[str] = None
+    price: Optional[float] = None
+    photos: Optional[List[str]] = None  # ✅ fixed: no default list
 
     model_config = {
-        'extra': 'forbid'
+        'extra': 'forbid'  # ✅ preserves strict schema
     }
 
 @function_tool
