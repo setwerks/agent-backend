@@ -60,7 +60,7 @@ class QuestData(BaseModel):
     distance: Optional[float]
     distance_unit: Optional[str]
     price: Optional[float]
-    photos: Optional[List[str]] = []
+    photos: Optional[List[str]] = None
 
     model_config = {
         'extra': 'forbid'
