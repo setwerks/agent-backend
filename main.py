@@ -133,6 +133,7 @@ quest_agent = Agent(
 # === MAIN QUEST ROUTE ===
 @app.post("/start-quest")
 async def start_quest(request: Request):
+    print(dir(Runner))
     try:
         body = await request.json()
         message = body.get("message")
