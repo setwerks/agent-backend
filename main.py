@@ -3,6 +3,7 @@ import json
 import logging
 import requests
 import uvicorn
+import re
 from datetime import datetime
 from uuid import uuid4
 from fastapi import FastAPI, Request, UploadFile, File
@@ -10,9 +11,10 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Optional, List
-from agents import Agent, Runner, function_tool, RunConfig, RunContextWrapper
+from agents import Agent, Runner, function_tool, RunConfig, RunContextWrapper, enable_verbose_stdout_logging
 from dataclasses import dataclass
 
+#enable_verbose_stdout_logging()
 @dataclass
 class QuestContext:
     quest_state: dict
@@ -36,29 +38,38 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
+@function_tool
+def update_quest_state(ctx: RunContextWrapper[QuestContext], field: str, value: str) -> str:
+    ctx.context.quest_state[field] = value
+    logging.info("[update_quest_state] Set %s = %s", field, value)
+    return f"Saved `{field}`."
+
 # === TOOL 1: Geocode location ===
 @function_tool
 async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) -> str:
+    logging.info("[geocode_location] Tool called")
     url = "https://nominatim.openstreetmap.org/search"
     params = {"q": location, "format": "json", "limit": 1}
     headers = {"User-Agent": "Questor-Agent/1.0"}
-    
+
     try:
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         data = response.json()
     except Exception as e:
         return f"Error fetching location data: {str(e)}"
-    
+
     if not data:
         return f"Sorry, I couldn't find '{location}'."
-    
+
     result = data[0]
     lat = result["lat"]
     lon = result["lon"]
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
 
-    # ✅ Update quest_state with coordinates
+    # ✅ Update quest_state
+    ctx.context.quest_state["general_location"] = location
+    ctx.context.quest_state["location_confirmed"] = True
     ctx.context.quest_state["geocoded_location"] = {
         "input": location,
         "lat": lat,
@@ -66,7 +77,16 @@ async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) 
         "map_url": map_url
     }
 
-    return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})"
+    logging.info("[geocode_location] Updated quest_state: %s", json.dumps(ctx.context.quest_state))
+
+    # ✅ Return assistant-friendly JSON block as string
+    json_output = {
+        "general_location": location,
+        "location_confirmed": True,
+        "action": "ask_for_distance"
+    }
+
+    return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})\n\n###JSON###\n{json.dumps(json_output, indent=2)}"
 
 # === TOOL 2: Create quest ===
 class QuestData(BaseModel):
@@ -85,6 +105,7 @@ class QuestData(BaseModel):
 
 @function_tool
 def create_quest(quest_data: QuestData) -> str:
+    logging.info("[create_quest] Tool called")
     try:
         api_url = os.getenv("QUEST_CREATE_ENDPOINT", "http://localhost:5000/quests")
         response = requests.post(api_url, json=quest_data.dict())
@@ -125,26 +146,93 @@ def save_session(quest_id: str, quest_state: dict, chat_history: list):
     res.raise_for_status()
 
 # === AGENT PROMPT ===
-quest_prompt = """
-You are a helpful onboarding assistant for a quest app. You help users create a new quest by collecting the following information, step by step:
+quest_prompt = """You are a helpful onboarding assistant for a quest app. You help users create a new quest by collecting the following information, step by step:
 What the user wants or has (e.g., “offering a new car”)
 A short description
 The general location (city, state)
 Confirmation of the location
 The distance (in km or miles) for the quest
-Price, if applicable
-Photos (optional)
-Use buttons for Yes/No confirmation prompts, or accept typed responses.
-When all required fields are collected and confirmed, call create_quest with the data.
-Never ask for the same information twice unless the user says it's incorrect.
-"""
+Price, if applicable (see rules below)
+Price Handling Rules
+If the quest is about a tangible item (e.g., a car, bike, laptop, etc.):
+If the user has something to offer (e.g., “I have an old car I want to sell”), ask for the price they want to sell it for.
+Example: “How much would you like to sell your car for?”
+If the user wants something (e.g., “I want to buy a car”), ask how much they are willing to pay.
+Example: “What is your budget or how much are you willing to pay?”
+If the quest is for a service, experience, or non-tangible (e.g., “want someone to ride bikes with”), do not ask for price.
+Use your best judgment based on the description and context. If unsure, do not ask for price.
+General Instructions
+If the user's message includes what they are offering or seeking (e.g., "offering a new car in oakland,ca"), extract the description (e.g., "a new car") and use it for the description field.
+Only ask for a description if you cannot infer it from the user's input.
+If you are unsure, use a reasonable default like "a new car" or echo the item/quest mentioned by the user.
+Do not ask for the description again if you already have one.
+Only ask for location confirmation if location_confirmed is not true.
+Only ask for distance if it is missing.
+Only offer the photo upload once, after all required fields are present.
+When all fields are present and confirmed, and the photo step is complete (either photos provided or skipped), set action: "ready".
+Always include the latest values for all fields in the JSON.
+Never ask for the same information twice unless the user says it was incorrect.
+Confirmation of the location uses geocode_location tool but if there is any question prompt the user to post the location again.
+When the action field is "ready", prompt the user to post the quest. When confirmed, run function create_quest.
+JSON Output
+ALWAYS output a JSON block at the end of your message, delimited by ###JSON###, containing the current state and an action field. The action field must be one of:
+"validate_location": When you need the user to confirm a location. Include general_location and set location_confirmed: false.
+"ask_for_distance": When you need the user to provide a distance.
+"ask_for_price": When you need the user to provide a price (see price rules above).
+"offer_photos": When you are offering the user the option to upload photos. Include a photos array (empty if none yet).
+"ready": When all required fields are present and confirmed (including after the photo step, whether or not photos were provided). Include all collected fields and set location_confirmed: true.
+"summarize": When summarizing the quest before finalization.
 
+Example output:
+How much would you like to sell your car for?
+###JSON###
+{
+  "want_or_have": "have",
+  "description": "an old car",
+  "general_location": "Oakland, CA",
+  "location_confirmed": true,
+  "distance": 8,
+  "distance_unit": "km",
+  "price": null,
+  "action": "ask_for_price"
+}
+
+What is your budget for the car you want to buy?
+###JSON###
+{
+  "want_or_have": "want",
+  "description": "a new car",
+  "general_location": "Oakland, CA",
+  "location_confirmed": true,
+  "distance": 8,
+  "distance_unit": "km",
+  "price": null,
+  "action": "ask_for_price"
+}
+
+Would you like to upload any photos for your quest? You can skip this step if you prefer.
+###JSON###
+{
+  "want_or_have": "have",
+  "description": "an old car",
+  "general_location": "Oakland, CA",
+  "location_confirmed": true,
+  "distance": 8,
+  "distance_unit": "km",
+  "price": 5000,
+  "photos": [],
+  "action": "offer_photos"
+}
+When you output JSON, it must be valid JSON:
+> - Do not include comments.
+> - All property names and string values must be double-quoted.
+> - Do not include trailing commas."""
 # === AGENT ===
 quest_agent = Agent(
     name="quest-onboarding-agent",
     instructions=quest_prompt,
-    tools=[geocode_location, create_quest],
-    model="gpt-4o"
+    tools=[geocode_location, create_quest, update_quest_state],
+    model="gpt-4o",
 )
 
 # === MAIN QUEST ROUTE ===
@@ -176,15 +264,34 @@ async def start_quest(request: Request):
             context=context,  # context must be a class for mutability
             run_config=RunConfig(workflow_name="quest_workflow")
         )
+        logging.info("Updated quest_state: %s", json.dumps(context.quest_state, indent=2))
+        # Extract and store structured JSON block if present
+        json_match = re.search(r"###JSON###\s*(\{.*\})", result.final_output, re.DOTALL)
+        logging.info("JSON match: %s", json_match)
+        if json_match:
+            try:
+                extracted = json.loads(json_match.group(1))
+                context.quest_state.update(extracted)
+                logging.info("[start-quest] Extracted quest_state update: %s", json.dumps(extracted))
+                # Strip the JSON from the final output shown to user
+                clean_output = result.final_output[:json_match.start()].strip()
+            except json.JSONDecodeError as e:
+                logging.warning("Could not parse JSON block from assistant output: %s", e)
+                clean_output = result.final_output
+        else:
+            clean_output = result.final_output
 
         updated_history = input_items + [
-            {"role": "assistant", "content": result.final_output}
+            {"role": "assistant", "content": clean_output}
         ]
 
         # Save the *modified* quest_state
         save_session(quest_id, context.quest_state, updated_history)
 
-        return {"message": result.final_output}
+        return {
+                "message": clean_output,
+                "quest_state": context.quest_state  # optional: useful for frontend syncing
+                }
 
     except Exception as e:
         logging.exception("Quest agent failed")
