@@ -133,7 +133,6 @@ quest_agent = Agent(
 # === MAIN QUEST ROUTE ===
 @app.post("/start-quest")
 async def start_quest(request: Request):
-    print(dir(Runner))
     try:
         body = await request.json()
         message = body.get("message")
@@ -146,9 +145,11 @@ async def start_quest(request: Request):
         history = session.get("chat_history", [])
 
         result = await Runner.run(
-            quest_agent,
-            message,
-            history=history,
+            starting_agent=quest_agent,
+            input=message,
+            context={
+                "chat_history": history
+            },
             run_config=RunConfig(workflow_name="quest_workflow")
         )
 
