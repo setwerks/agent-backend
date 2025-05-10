@@ -10,7 +10,12 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Optional, List
-from agents import Agent, Runner, function_tool, RunConfig
+from agents import Agent, Runner, function_tool, RunConfig, RunContextWrapper
+from dataclasses import dataclass
+
+@dataclass
+class QuestContext:
+    quest_state: dict
 
 # Load environment variables
 load_dotenv()
@@ -33,22 +38,34 @@ os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
 # === TOOL 1: Geocode location ===
 @function_tool
-def geocode_location(location: str) -> str:
+async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) -> str:
     url = "https://nominatim.openstreetmap.org/search"
     params = {"q": location, "format": "json", "limit": 1}
     headers = {"User-Agent": "Questor-Agent/1.0"}
+    
     try:
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         data = response.json()
     except Exception as e:
         return f"Error fetching location data: {str(e)}"
+    
     if not data:
         return f"Sorry, I couldn't find '{location}'."
+    
     result = data[0]
     lat = result["lat"]
     lon = result["lon"]
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
+
+    # ✅ Update quest_state with coordinates
+    ctx.context.quest_state["geocoded_location"] = {
+        "input": location,
+        "lat": lat,
+        "lon": lon,
+        "map_url": map_url
+    }
+
     return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})"
 
 # === TOOL 2: Create quest ===
@@ -145,20 +162,18 @@ async def start_quest(request: Request):
         history = session.get("chat_history", [])
         quest_state = session.get("quest_state", {})
 
-        #logging.info(f"Fetched session for quest_id={quest_id}")
-        #logging.info(f"Chat history (length={len(history)}): {history}")
-        #logging.info(f"Quest state: {quest_state}")
-
-        # Combine prior history with new message
         input_items = [
             {"role": m["role"], "content": m["content"]}
             for m in history if "role" in m and "content" in m
         ] + [{"role": "user", "content": message}]
 
+        # Use structured context object so quest_state is mutable
+        context = QuestContext(quest_state=quest_state)
+
         result = await Runner.run(
             starting_agent=quest_agent,
             input=input_items,
-            context={"quest_state": quest_state},  # Non-visible state only
+            context=context,  # context must be a class for mutability
             run_config=RunConfig(workflow_name="quest_workflow")
         )
 
@@ -166,14 +181,14 @@ async def start_quest(request: Request):
             {"role": "assistant", "content": result.final_output}
         ]
 
-        save_session(quest_id, quest_state, updated_history)
+        # Save the *modified* quest_state
+        save_session(quest_id, context.quest_state, updated_history)
 
         return {"message": result.final_output}
 
     except Exception as e:
         logging.exception("Quest agent failed")
         return {"error": str(e)}
-
 # === PHOTO UPLOAD ===
 @app.post("/upload-photo")
 async def upload_photo(file: UploadFile = File(...)):
