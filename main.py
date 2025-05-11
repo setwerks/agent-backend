@@ -52,6 +52,12 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
 @function_tool
+def confirm_location(ctx: RunContextWrapper[QuestContext]) -> str:
+    ctx.context.quest_state["location_confirmed"] = True
+    logging.info("[confirm_location] Set location_confirmed = True")
+    return "✅ Location confirmed."
+
+@function_tool
 def update_quest_state(ctx: RunContextWrapper[QuestContext], field: str, value: str) -> str:
     ctx.context.quest_state[field] = value
     logging.info("[update_quest_state] Set %s = %s", field, value)
@@ -80,9 +86,9 @@ async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) 
     lon = result["lon"]
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
 
-    # ✅ Update quest_state
+    # ✅ Update quest_state (but DO NOT confirm yet)
     ctx.context.quest_state["general_location"] = location
-    ctx.context.quest_state["location_confirmed"] = True
+    ctx.context.quest_state["location_confirmed"] = False  # wait for user confirmation
     ctx.context.quest_state["geocoded_location"] = {
         "input": location,
         "lat": lat,
@@ -92,14 +98,23 @@ async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) 
 
     logging.info("[geocode_location] Updated quest_state: %s", json.dumps(ctx.context.quest_state))
 
-    # ✅ Return assistant-friendly JSON block as string
     json_output = {
         "general_location": location,
-        "location_confirmed": True,
-        "action": "ask_for_distance"
+        "location_confirmed": False,
+        "geocoded_location": {
+            "input": location,
+            "lat": lat,
+            "lon": lon,
+            "map_url": map_url
+        },
+        "action": "validate_location",
+        "ui": {
+            "trigger": "location_confirm",
+            "buttons": ["Yes", "No"]
+        }
     }
 
-    return f"{location} is at latitude {lat}, longitude {lon}. [View on Map]({map_url})\n\n###JSON###\n{json.dumps(json_output, indent=2)}"
+    return f"I found a location match for '{location}': [View on Map]({map_url})\nIs this the correct location?\n\n###JSON###\n{json.dumps(json_output, indent=2)}"
 
 # === TOOL 2: Create quest ===
 class QuestData(BaseModel):
@@ -189,7 +204,10 @@ When all fields are present and confirmed, and the photo step is complete (eithe
 Always include the latest values for all fields in the JSON.  
 Never ask for the same information twice unless the user says it was incorrect.  
 Confirmation of the location uses geocode_location tool but if there is any question prompt the user to post the location again.  
-When the action field is "ready", prompt the user to post the quest. When confirmed, run function create_quest.
+When the action field is "ready", prompt the user to post the quest with UI Example: "ui": {
+  "trigger": "post_quest",
+  "buttons": ["Yes", "No"]
+}
 
 User Interface Hints (for frontend rendering)  
 When asking a question that can benefit from a UI element (e.g., yes/no buttons, location confirmation, distance choices), include a `"ui"` field inside the JSON block.
@@ -283,7 +301,7 @@ How far are you willing to look?
 quest_agent = Agent(
     name="quest-onboarding-agent-2",
     instructions=quest_prompt,
-    tools=[geocode_location, create_quest, update_quest_state],
+    tools=[geocode_location, create_quest, update_quest_state, confirm_location],
     model="gpt-4o",
 )
 
@@ -324,6 +342,7 @@ async def start_quest(request: Request):
         if json_match:
             try:
                 extracted = json.loads(json_match.group(1))
+                context.quest_state.pop("ui", None) 
                 context.quest_state.update(extracted)
                 logging.info("[start-quest] Extracted quest_state update: %s", json.dumps(extracted))
                 # Strip the JSON from the final output shown to user
