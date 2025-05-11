@@ -4,3 +4,4 @@ uvicorn>=0.27.0
 pydantic
 requests
 python-dotenv
+tiktoken>=0.5.1

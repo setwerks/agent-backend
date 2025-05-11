@@ -13,6 +13,19 @@ from pydantic import BaseModel
 from typing import Optional, List
 from agents import Agent, Runner, function_tool, RunConfig, RunContextWrapper, enable_verbose_stdout_logging
 from dataclasses import dataclass
+import tiktoken
+
+def estimate_token_usage(messages: list, model: str = "gpt-4o") -> int:
+    encoding = tiktoken.encoding_for_model(model)
+    tokens = 0
+
+    for message in messages:
+        # Rough estimate of message structure
+        tokens += 4  # every message has base structure
+        for key, value in message.items():
+            tokens += len(encoding.encode(str(value)))
+    tokens += 2  # every reply is primed with <|start|>assistant
+    return tokens
 
 #enable_verbose_stdout_logging()
 @dataclass
@@ -303,15 +316,7 @@ async def start_quest(request: Request):
             context=context,  # context must be a class for mutability
             run_config=RunConfig(workflow_name="quest_workflow")
         )
-        token_stats = {}
-        if result.trace and result.trace.steps:
-            first_step = result.trace.steps[0]
-            if hasattr(first_step, "usage"):
-                token_stats = {
-                    "prompt_tokens": first_step.usage.prompt_tokens,
-                    "completion_tokens": first_step.usage.completion_tokens,
-                    "total_tokens": first_step.usage.total_tokens
-                }
+
         logging.info("Updated quest_state: %s", json.dumps(context.quest_state, indent=2))
         # Extract and store structured JSON block if present
         json_match = re.search(r"###JSON###\s*(\{.*\})", result.final_output, re.DOTALL)
@@ -336,10 +341,12 @@ async def start_quest(request: Request):
         # Save the *modified* quest_state
         save_session(quest_id, context.quest_state, updated_history)
 
+        token_estimate = estimate_token_usage(input_items)
+
         return {
                 "message": clean_output,
                 "quest_state": context.quest_state,  # optional: useful for frontend syncing
-                "token_stats": token_stats
+                "token_stats": token_estimate
                 }
 
     except Exception as e:
