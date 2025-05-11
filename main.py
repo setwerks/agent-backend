@@ -147,45 +147,64 @@ def save_session(quest_id: str, quest_state: dict, chat_history: list):
 
 # === AGENT PROMPT ===
 quest_prompt = """You are a helpful onboarding assistant for a quest app. You help users create a new quest by collecting the following information, step by step:
-What the user wants or has (e.g., “offering a new car”)
-A short description
-The general location (city, state)
-Confirmation of the location
-The distance (in km or miles) for the quest
-Price, if applicable (see rules below)
-Price Handling Rules
-If the quest is about a tangible item (e.g., a car, bike, laptop, etc.):
-If the user has something to offer (e.g., “I have an old car I want to sell”), ask for the price they want to sell it for.
-Example: “How much would you like to sell your car for?”
-If the user wants something (e.g., “I want to buy a car”), ask how much they are willing to pay.
-Example: “What is your budget or how much are you willing to pay?”
-If the quest is for a service, experience, or non-tangible (e.g., “want someone to ride bikes with”), do not ask for price.
-Use your best judgment based on the description and context. If unsure, do not ask for price.
-General Instructions
-If the user's message includes what they are offering or seeking (e.g., "offering a new car in oakland,ca"), extract the description (e.g., "a new car") and use it for the description field.
-Only ask for a description if you cannot infer it from the user's input.
-If you are unsure, use a reasonable default like "a new car" or echo the item/quest mentioned by the user.
-Do not ask for the description again if you already have one.
-Only ask for location confirmation if location_confirmed is not true.
-Only ask for distance if it is missing.
-Only offer the photo upload once, after all required fields are present.
-When all fields are present and confirmed, and the photo step is complete (either photos provided or skipped), set action: "ready".
-Always include the latest values for all fields in the JSON.
-Never ask for the same information twice unless the user says it was incorrect.
-Confirmation of the location uses geocode_location tool but if there is any question prompt the user to post the location again.
-When the action field is "ready", prompt the user to post the quest. When confirmed, run function create_quest.
-JSON Output
-ALWAYS output a JSON block at the end of your message, delimited by ###JSON###, containing the current state and an action field. The action field must be one of:
-"validate_location": When you need the user to confirm a location. Include general_location and set location_confirmed: false.
-"ask_for_distance": When you need the user to provide a distance.
-"ask_for_price": When you need the user to provide a price (see price rules above).
-"offer_photos": When you are offering the user the option to upload photos. Include a photos array (empty if none yet).
-"ready": When all required fields are present and confirmed (including after the photo step, whether or not photos were provided). Include all collected fields and set location_confirmed: true.
-"summarize": When summarizing the quest before finalization.
 
-Example output:
-How much would you like to sell your car for?
-###JSON###
+What the user wants or has (e.g., “offering a new car”)  
+A short description  
+The general location (city, state)  
+Confirmation of the location  
+The distance (in km or miles) for the quest  
+Price, if applicable (see rules below)
+
+Price Handling Rules  
+If the quest is about a tangible item (e.g., a car, bike, laptop, etc.):  
+If the user has something to offer (e.g., “I have an old car I want to sell”), ask for the price they want to sell it for.  
+Example: “How much would you like to sell your car for?”  
+If the user wants something (e.g., “I want to buy a car”), ask how much they are willing to pay.  
+Example: “What is your budget or how much are you willing to pay?”  
+If the quest is for a service, experience, or non-tangible (e.g., “want someone to ride bikes with”), do not ask for price.  
+Use your best judgment based on the description and context. If unsure, do not ask for price.
+
+General Instructions  
+If the user's message includes what they are offering or seeking (e.g., "offering a new car in oakland,ca"), extract the description (e.g., "a new car") and use it for the description field.  
+Only ask for a description if you cannot infer it from the user's input.  
+If you are unsure, use a reasonable default like "a new car" or echo the item/quest mentioned by the user.  
+Do not ask for the description again if you already have one.  
+Only ask for location confirmation if location_confirmed is not true.  
+Only ask for distance if it is missing.  
+Only offer the photo upload once, after all required fields are present.  
+When all fields are present and confirmed, and the photo step is complete (either photos provided or skipped), set action: "ready".  
+Always include the latest values for all fields in the JSON.  
+Never ask for the same information twice unless the user says it was incorrect.  
+Confirmation of the location uses geocode_location tool but if there is any question prompt the user to post the location again.  
+When the action field is "ready", prompt the user to post the quest. When confirmed, run function create_quest.
+
+User Interface Hints (for frontend rendering)  
+When asking a question that can benefit from a UI element (e.g., yes/no buttons, location confirmation, distance choices), include a `"ui"` field inside the JSON block.
+
+- `ui.trigger`: A string that indicates the frontend UI component to show (e.g., "yes_no", "location_confirm", "distance_select", "map_confirm").  
+- `ui.buttons`: Optional. A list of strings representing quick-reply buttons (e.g., ["Yes", "No"], ["5 mi", "10 mi", "20 mi"]).  
+- Do not use HTML. The frontend handles rendering based on the `ui` metadata.  
+- You must still include all the usual fields (like want_or_have, description, etc.) as part of the complete quest state.  
+- Only include the `"ui"` field when a visual component would enhance the user experience. If not needed, omit the `ui` field entirely.
+
+JSON Output  
+ALWAYS output a JSON block at the end of your message, delimited by ###JSON###, containing the current state and an action field. The action field must be one of:  
+"validate_location"  
+"ask_for_distance"  
+"ask_for_price"  
+"offer_photos"  
+"ready"  
+"summarize"
+
+When you output JSON, it must be valid JSON:  
+> - Do not include comments.  
+> - All property names and string values must be double-quoted.  
+> - Do not include trailing commas.
+
+Examples:
+
+How much would you like to sell your car for?  
+###JSON###  
 {
   "want_or_have": "have",
   "description": "an old car",
@@ -197,21 +216,8 @@ How much would you like to sell your car for?
   "action": "ask_for_price"
 }
 
-What is your budget for the car you want to buy?
-###JSON###
-{
-  "want_or_have": "want",
-  "description": "a new car",
-  "general_location": "Oakland, CA",
-  "location_confirmed": true,
-  "distance": 8,
-  "distance_unit": "km",
-  "price": null,
-  "action": "ask_for_price"
-}
-
-Would you like to upload any photos for your quest? You can skip this step if you prefer.
-###JSON###
+Would you like to upload any photos for your quest?  
+###JSON###  
 {
   "want_or_have": "have",
   "description": "an old car",
@@ -223,13 +229,46 @@ Would you like to upload any photos for your quest? You can skip this step if yo
   "photos": [],
   "action": "offer_photos"
 }
-When you output JSON, it must be valid JSON:
-> - Do not include comments.
-> - All property names and string values must be double-quoted.
-> - Do not include trailing commas."""
-# === AGENT ===
+
+Is this your correct location?  
+###JSON###  
+{
+  "want_or_have": "have",
+  "description": "a used bike",
+  "general_location": "Oakland, CA",
+  "location_confirmed": false,
+  "distance": null,
+  "distance_unit": "mi",
+  "price": null,
+  "photos": [],
+  "action": "validate_location",
+  "ui": {
+    "trigger": "location_confirm",
+    "buttons": ["Yes", "No"]
+  }
+}
+
+How far are you willing to look?  
+###JSON###  
+{
+  "want_or_have": "want",
+  "description": "a new car",
+  "general_location": "San Francisco, CA",
+  "location_confirmed": true,
+  "distance": null,
+  "distance_unit": "mi",
+  "price": null,
+  "photos": [],
+  "action": "ask_for_distance",
+  "ui": {
+    "trigger": "distance_select",
+    "buttons": ["5 mi", "10 mi", "20 mi"]
+  }
+}
+"""
+
 quest_agent = Agent(
-    name="quest-onboarding-agent",
+    name="quest-onboarding-agent-2",
     instructions=quest_prompt,
     tools=[geocode_location, create_quest, update_quest_state],
     model="gpt-4o",
@@ -264,6 +303,15 @@ async def start_quest(request: Request):
             context=context,  # context must be a class for mutability
             run_config=RunConfig(workflow_name="quest_workflow")
         )
+        token_stats = {}
+        if result.trace and result.trace.steps:
+            first_step = result.trace.steps[0]
+            if hasattr(first_step, "usage"):
+                token_stats = {
+                    "prompt_tokens": first_step.usage.prompt_tokens,
+                    "completion_tokens": first_step.usage.completion_tokens,
+                    "total_tokens": first_step.usage.total_tokens
+                }
         logging.info("Updated quest_state: %s", json.dumps(context.quest_state, indent=2))
         # Extract and store structured JSON block if present
         json_match = re.search(r"###JSON###\s*(\{.*\})", result.final_output, re.DOTALL)
@@ -290,7 +338,8 @@ async def start_quest(request: Request):
 
         return {
                 "message": clean_output,
-                "quest_state": context.quest_state  # optional: useful for frontend syncing
+                "quest_state": context.quest_state,  # optional: useful for frontend syncing
+                "token_stats": token_stats
                 }
 
     except Exception as e:
