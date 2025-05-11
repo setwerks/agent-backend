@@ -14,6 +14,7 @@ from typing import Optional, List
 from agents import Agent, Runner, function_tool, RunConfig, RunContextWrapper, enable_verbose_stdout_logging
 from dataclasses import dataclass
 import tiktoken
+import copy
 
 def estimate_token_usage(messages: list, model: str = "gpt-4o") -> int:
     encoding = tiktoken.encoding_for_model(model)
@@ -50,6 +51,26 @@ app = FastAPI()
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
+
+# Default quest state template
+DEFAULT_QUEST_STATE = {
+    "want_or_have": None,
+    "description": None,
+    "general_location": None,
+    "location_confirmed": False,
+    "distance": None,
+    "distance_unit": "mi",
+    "price": None,
+    "photos": [],
+    "action": None,
+    "ui": None,
+}
+
+def ensure_full_quest_state(state):
+    full_state = copy.deepcopy(DEFAULT_QUEST_STATE)
+    if state:
+        full_state.update(state)
+    return full_state
 
 @function_tool
 def confirm_location(ctx: RunContextWrapper[QuestContext]) -> str:
@@ -176,7 +197,7 @@ def save_session(quest_id: str, quest_state: dict, chat_history: list):
 # === AGENT PROMPT ===
 quest_prompt = """You are a helpful onboarding assistant for a quest app. You help users create a new quest by collecting the following information, step by step:
 
-What the user wants or has (e.g., “offering a new car”)  
+What the user wants or has (e.g., "offering a new car")  
 A short description  
 The general location (city, state)  
 Confirmation of the location  
@@ -185,11 +206,11 @@ Price, if applicable (see rules below)
 
 Price Handling Rules  
 If the quest is about a tangible item (e.g., a car, bike, laptop, etc.):  
-If the user has something to offer (e.g., “I have an old car I want to sell”), ask for the price they want to sell it for.  
-Example: “How much would you like to sell your car for?”  
-If the user wants something (e.g., “I want to buy a car”), ask how much they are willing to pay.  
-Example: “What is your budget or how much are you willing to pay?”  
-If the quest is for a service, experience, or non-tangible (e.g., “want someone to ride bikes with”), do not ask for price.  
+If the user has something to offer (e.g., "I have an old car I want to sell"), ask for the price they want to sell it for.  
+Example: "How much would you like to sell your car for?"  
+If the user wants something (e.g., "I want to buy a car"), ask how much they are willing to pay.  
+Example: "What is your budget or how much are you willing to pay?"  
+If the quest is for a service, experience, or non-tangible (e.g., "want someone to ride bikes with"), do not ask for price.  
 Use your best judgment based on the description and context. If unsure, do not ask for price.
 
 General Instructions  
@@ -320,6 +341,9 @@ async def start_quest(request: Request):
         history = session.get("chat_history", [])
         quest_state = session.get("quest_state", {})
 
+        # Always start with a full quest state
+        quest_state = ensure_full_quest_state(quest_state)
+
         input_items = [
             {"role": m["role"], "content": m["content"]}
             for m in history if "role" in m and "content" in m
@@ -353,6 +377,9 @@ async def start_quest(request: Request):
         else:
             clean_output = result.final_output
 
+        # Ensure all keys are present in quest_state before saving/returning
+        context.quest_state = ensure_full_quest_state(context.quest_state)
+
         updated_history = input_items + [
             {"role": "assistant", "content": clean_output}
         ]
@@ -371,6 +398,7 @@ async def start_quest(request: Request):
     except Exception as e:
         logging.exception("Quest agent failed")
         return {"error": str(e)}
+
 # === PHOTO UPLOAD ===
 @app.post("/upload-photo")
 async def upload_photo(file: UploadFile = File(...)):
