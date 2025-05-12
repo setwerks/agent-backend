@@ -71,6 +71,15 @@ class GeocodeLocationResponse(BaseModel):
     class Config:
         extra = "forbid"
 
+# --- Input models for strict schema ---
+class SaveSessionParams(BaseModel):
+    session_id: str
+    quest_state: Dict[str, Any]
+    chat_history: List[Any]
+
+    class Config:
+        extra = "forbid"
+
 # === Session management tools ===
 @function_tool
 async def load_session(session_id: str) -> SessionData:
@@ -98,22 +107,23 @@ async def load_session(session_id: str) -> SessionData:
     )
 
 @function_tool
-async def save_session(session_id: str, quest_state: Dict[str, Any], chat_history: List[Any]) -> SessionSaveResponse:
-    state_copy = quest_state.copy()
+async def save_session(params: SaveSessionParams) -> SessionSaveResponse:
+    # strip out UI artifacts
+    state_copy = params.quest_state.copy()
     state_copy.pop("ui", None)
     payload = {
-        "quest_id": session_id,
-        "quest_state": state_copy,
-        "chat_history": chat_history,
-        "last_updated": datetime.utcnow().isoformat(),
+        "quest_id":       params.session_id,
+        "quest_state":    state_copy,
+        "chat_history":   params.chat_history,
+        "last_updated":   datetime.utcnow().isoformat(),
     }
-    url = f"{SUPABASE_API}?quest_id=eq.{session_id}"
+    url = f"{SUPABASE_API}?quest_id=eq.{params.session_id}"
     res = requests.patch(url, headers=SUPABASE_HEADERS, json=payload)
     res.raise_for_status()
-    return SessionSaveResponse(session_id=session_id)
+    return SessionSaveResponse(session_id=params.session_id)
 
 @function_tool
-def update_quest_state(ctx: RunContextWrapper, field: str, value: Any) -> UpdateResponse:
+def update_quest_state(ctx: RunContextWrapper, field: str, value: str) -> UpdateResponse:
     ctx.context.quest_state[field] = value
     logging.info("[update_quest_state] Set %s = %s", field, value)
     return UpdateResponse(message=f"Saved `{field}`.")
@@ -196,24 +206,17 @@ async def geocode_location(ctx: RunContextWrapper, location: str) -> GeocodeLoca
         "lon": lon,
         "map_url": map_url
     }
-    json_output = {
-        "general_location": location,
-        "location_confirmed": False,
-        "geocoded_location": {
-            "input": location,
-            "lat": lat,
-            "lon": lon,
-            "map_url": map_url
-        },
-        "action": "validate_location",
-        "ui": {"trigger": "location_confirm", "buttons": ["Yes", "No"]}
-    }
-    message = (
-        f"I found a location match for '{location}': [View on Map]({map_url})\n"
-        "Is this the correct location?\n\n" + json.dumps(json_output, indent=2)
-    )
     return GeocodeLocationResponse(
-        message=message,
+        message=(
+            f"I found a location match for '{location}': [View on Map]({map_url})\n"
+            "Is this the correct location?\n\n" + json.dumps({
+                "general_location": location,
+                "location_confirmed": False,
+                "geocoded_location": {"input": location, "lat": lat, "lon": lon, "map_url": map_url},
+                "action": "validate_location",
+                "ui": {"trigger": "location_confirm", "buttons": ["Yes", "No"]}
+            }, indent=2)
+        ),
         general_location=location,
         location_confirmed=False,
         geocoded_location={"input": location, "lat": lat, "lon": lon, "map_url": map_url},
