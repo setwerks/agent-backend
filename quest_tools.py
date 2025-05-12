@@ -33,32 +33,32 @@ class SessionData(BaseModel):
     chat_history: List[Any]
 
     class Config:
-        extra = "forbid"
+        extra = "ignore"
 
 class SessionSaveResponse(BaseModel):
     session_id: str
 
     class Config:
-        extra = "forbid"
+        extra = "ignore"
 
 class UpdateResponse(BaseModel):
     message: str
 
     class Config:
-        extra = "forbid"
+        extra = "ignore"
 
 class Classification(BaseModel):
     general_category: str
     sub_category: str
 
     class Config:
-        extra = "forbid"
+        extra = "ignore"
 
 class ConfirmLocationResponse(BaseModel):
     message: str
 
     class Config:
-        extra = "forbid"
+        extra = "ignore"
 
 class GeocodeLocationResponse(BaseModel):
     message: str
@@ -69,7 +69,7 @@ class GeocodeLocationResponse(BaseModel):
     ui: Dict[str, Any]
 
     class Config:
-        extra = "forbid"
+        extra = "ignore"
 
 # --- Input models for strict schema ---
 class SaveSessionParams(BaseModel):
@@ -78,7 +78,7 @@ class SaveSessionParams(BaseModel):
     chat_history: List[Any]
 
     class Config:
-        extra = "forbid"
+        extra = "ignore"
 
 # === Session management tools ===
 @function_tool
