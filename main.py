@@ -55,6 +55,7 @@ def build_dynamic_prompt(quest_state, history):
     distance = quest_state.get("distance")
     distance_unit = quest_state.get("distance_unit")
     want_or_have = quest_state.get("want_or_have")
+    location_confirmed = quest_state.get("location_confirmed")
 
     if action == "ask_for_price":
         return (
@@ -76,13 +77,18 @@ def build_dynamic_prompt(quest_state, history):
             f"Current location: {location}\n"
             f"Ask how far they are willing to look ({distance_unit})."
         )
-    elif action == "validate_location":
+    elif action == "validate_location" and location_confirmed is False:
         return (
             f"You are helping a user confirm their location for a quest.\n"
             f"Current location: {location}\n"
             f"Ask the user to confirm or correct their location."
         )
-    # Add more action-specific prompts as needed
+    elif action == "validate_location" and location_confirmed is True:
+        return (
+            f"You are helping a user confirm their location for a quest.\n"
+            f"Current location: {location}\n"
+            f"The location is confirmed, so ask the user to post the quest."
+        )# Add more action-specific prompts as needed
 
     # Fallback to the full prompt
     return quest_prompt
@@ -129,45 +135,74 @@ def update_quest_state(ctx: RunContextWrapper[QuestContext], field: str, value: 
 @function_tool
 async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) -> str:
     logging.info("[geocode_location] Tool called")
-    url = "https://nominatim.openstreetmap.org/search"
-    params = {"q": location, "format": "json", "limit": 1}
-    headers = {"User-Agent": "Questor-Agent/1.0"}
+    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+    if not api_key:
+        return "Error: Google Maps API key is missing. Please set GOOGLE_MAPS_API_KEY in your environment."
+
+    url = "https://maps.googleapis.com/maps/api/geocode/json"
+    params = {"address": location, "key": api_key}
 
     try:
-        response = requests.get(url, params=params, headers=headers)
+        response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
     except Exception as e:
         return f"Error fetching location data: {str(e)}"
 
-    if not data:
-        return f"Sorry, I couldn't find '{location}'."
+    if data.get("status") == "REQUEST_DENIED":
+        return "Error: Google Maps API request was denied. Please check your API key and enable the Geocoding API."
+    if data.get("status") == "ZERO_RESULTS":
+        return f"No results found for location: '{location}'. Please try a more specific address."
+    if data.get("status") != "OK" or not data.get("results"):
+        return f"Geocoding failed with status: {data.get('status')}"
 
-    result = data[0]
-    lat = result["lat"]
-    lon = result["lon"]
+    result = data["results"][0]
+    lat = result["geometry"]["location"]["lat"]
+    lon = result["geometry"]["location"]["lng"]
+
+    city = ""
+    state = ""
+    for component in result["address_components"]:
+        if "locality" in component["types"]:
+            city = component["long_name"]
+        elif "administrative_area_level_1" in component["types"]:
+            state = component["long_name"]
+
+    if not city or not state:
+        return "Could not find city and state information in the geocoding result."
+
+    formatted_address = f"{city}, {state}"
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
+    # Google Static Maps image
+    static_map_url = (
+        f"https://maps.googleapis.com/maps/api/staticmap"
+        f"?center={lat},{lon}&zoom=12&size=600x300&markers=color:red%7C{lat},{lon}&key={api_key}"
+    )
 
     # ✅ Update quest_state (but DO NOT confirm yet)
-    ctx.context.quest_state["general_location"] = location
+    ctx.context.quest_state["general_location"] = formatted_address
     ctx.context.quest_state["location_confirmed"] = False  # wait for user confirmation
     ctx.context.quest_state["geocoded_location"] = {
         "input": location,
         "lat": lat,
         "lon": lon,
-        "map_url": map_url
+        "map_url": map_url,
+        "static_map_url": static_map_url,
+        "formatted_address": formatted_address,
     }
 
     logging.info("[geocode_location] Updated quest_state: %s", json.dumps(ctx.context.quest_state))
 
     json_output = {
-        "general_location": location,
+        "general_location": formatted_address,
         "location_confirmed": False,
         "geocoded_location": {
             "input": location,
             "lat": lat,
             "lon": lon,
-            "map_url": map_url
+            "map_url": map_url,
+            "static_map_url": static_map_url,
+            "formatted_address": formatted_address,
         },
         "action": "validate_location",
         "ui": {
@@ -176,8 +211,11 @@ async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) 
         }
     }
 
-    return f"I found a location match for '{location}': [View on Map]({map_url})\nIs this the correct location?\n\n###JSON###\n{json.dumps(json_output, indent=2)}"
-
+    return (
+        f"I found a location match for '{location}': [View on Map]({map_url})\n"
+        f"![Map Image]({static_map_url})\n"
+        f"Is this the correct location?\n\n###JSON###\n{json.dumps(json_output, indent=2)}"
+    )
 # === TOOL 2: Create quest ===
 class QuestData(BaseModel):
     want_or_have: Optional[str] = None
