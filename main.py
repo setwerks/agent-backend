@@ -374,7 +374,6 @@ async def start_quest(request: Request):
         if json_match:
             try:
                 extracted = json.loads(json_match.group(1))
-                context.quest_state.pop("ui", None) 
                 context.quest_state.update(extracted)
                 logging.info("[start-quest] Extracted quest_state update: %s", json.dumps(extracted))
                 # Strip the JSON from the final output shown to user
