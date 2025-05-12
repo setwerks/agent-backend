@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 from pydantic import BaseModel
-from agents.tool import tool  # use non-strict decorator
+from agents import function_tool
 from agents import RunContextWrapper
 
 # Supabase config
@@ -32,18 +32,33 @@ class SessionData(BaseModel):
     quest_state: Dict[str, Any]
     chat_history: List[Any]
 
+    class Config:
+        extra = "forbid"
+
 class SessionSaveResponse(BaseModel):
     session_id: str
 
+    class Config:
+        extra = "forbid"
+
 class UpdateResponse(BaseModel):
     message: str
+
+    class Config:
+        extra = "forbid"
 
 class Classification(BaseModel):
     general_category: str
     sub_category: str
 
+    class Config:
+        extra = "forbid"
+
 class ConfirmLocationResponse(BaseModel):
     message: str
+
+    class Config:
+        extra = "forbid"
 
 class GeocodeLocationResponse(BaseModel):
     message: str
@@ -53,8 +68,11 @@ class GeocodeLocationResponse(BaseModel):
     action: str
     ui: Dict[str, Any]
 
+    class Config:
+        extra = "forbid"
+
 # === Session management tools ===
-@tool
+@function_tool
 async def load_session(session_id: str) -> SessionData:
     url = f"{SUPABASE_API}?quest_id=eq.{session_id}"
     res = requests.get(url, headers=SUPABASE_HEADERS)
@@ -79,9 +97,8 @@ async def load_session(session_id: str) -> SessionData:
         chat_history=record.get("chat_history", [])
     )
 
-@tool
+@function_tool
 async def save_session(session_id: str, quest_state: Dict[str, Any], chat_history: List[Any]) -> SessionSaveResponse:
-    # strip out UI artifacts
     state_copy = quest_state.copy()
     state_copy.pop("ui", None)
     payload = {
@@ -95,14 +112,14 @@ async def save_session(session_id: str, quest_state: Dict[str, Any], chat_histor
     res.raise_for_status()
     return SessionSaveResponse(session_id=session_id)
 
-@tool
+@function_tool
 def update_quest_state(ctx: RunContextWrapper, field: str, value: Any) -> UpdateResponse:
     ctx.context.quest_state[field] = value
     logging.info("[update_quest_state] Set %s = %s", field, value)
     return UpdateResponse(message=f"Saved `{field}`.")
 
 # === Classification tool ===
-@tool
+@function_tool
 async def classify_quest(text: str) -> Classification:
     prompt = (
         "You are a classification assistant. Given a user query and a taxonomy of Craigslist-style categories, "
@@ -133,13 +150,13 @@ async def classify_quest(text: str) -> Classification:
         return Classification(general_category="general", sub_category="")
 
 # === Location tools ===
-@tool
+@function_tool
 def confirm_location(ctx: RunContextWrapper) -> ConfirmLocationResponse:
     ctx.context.quest_state["location_confirmed"] = True
     logging.info("[confirm_location] Set location_confirmed = True")
     return ConfirmLocationResponse(message="✅ Location confirmed.")
 
-@tool
+@function_tool
 async def geocode_location(ctx: RunContextWrapper, location: str) -> GeocodeLocationResponse:
     logging.info("[geocode_location] Tool called")
     url = "https://nominatim.openstreetmap.org/search"
@@ -203,4 +220,3 @@ async def geocode_location(ctx: RunContextWrapper, location: str) -> GeocodeLoca
         action="validate_location",
         ui={"trigger": "location_confirm", "buttons": ["Yes", "No"]}
     )
-
