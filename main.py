@@ -95,6 +95,7 @@ async def start_quest(request: Request):
         context=context,
         run_config=RunConfig(workflow_name="quest_workflow")
     )
+    logging.info(f"Agent output: {result.final_output}")  # Log the raw output
 
     # Parse and update state
     parsed = json.loads(result.final_output)

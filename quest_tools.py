@@ -101,6 +101,13 @@ async def load_session(session_id: str) -> SessionData:
         create.raise_for_status()
         return SessionData(quest_state={}, chat_history=[])
     record = data[0]
+    if data:
+        record = data[0]
+        logging.info(f"Supabase record: {record}")  # Log the entire record
+        return SessionData(
+            quest_state=record.get("quest_state", {}),
+            chat_history=record.get("chat_history", [])
+        )
     return SessionData(
         quest_state=record.get("quest_state", {}),
         chat_history=record.get("chat_history", [])
