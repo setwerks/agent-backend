@@ -366,7 +366,7 @@ async def start_quest(request: Request):
             context=context,  # context must be a class for mutability
             run_config=RunConfig(workflow_name="quest_workflow")
         )
-
+        logging.info("RESULT: %s", result.final_output)
         logging.info("Updated quest_state: %s", json.dumps(context.quest_state, indent=2))
         # Extract and store structured JSON block if present
         json_match = re.search(r"###JSON###\s*(\{.*\})", result.final_output, re.DOTALL)
