@@ -28,6 +28,18 @@ except Exception:
     TAXONOMY = {}
 
 # --- Strict Pydantic models ---
+class UIModel(BaseModel):
+    trigger: Optional[str] = None
+    buttons: Optional[List[str]] = None
+    model_config = {"extra": "forbid"}
+
+class GeocodedLocationModel(BaseModel):
+    input: str
+    lat: float
+    lon: float
+    map_url: str
+    model_config = {"extra": "forbid"}
+
 class ChatMessage(BaseModel):
     role: str
     content: str
@@ -43,7 +55,8 @@ class QuestState(BaseModel):
     price: Optional[float] = None
     photos: List[str] = []
     action: Optional[str] = None
-    ui: Optional[dict] = None
+    ui: Optional[UIModel] = None
+    geocoded_location: Optional[GeocodedLocationModel] = None
     model_config = {"extra": "forbid"}
 
 class SessionData(BaseModel):
@@ -78,9 +91,9 @@ class GeocodeLocationResponse(BaseModel):
     message: str
     general_location: str
     location_confirmed: bool
-    geocoded_location: dict
+    geocoded_location: Optional[GeocodedLocationModel] = None
     action: str
-    ui: Optional[dict]
+    ui: Optional[UIModel] = None
     model_config = {"extra": "forbid"}
 
 # === Session management tools ===
@@ -120,7 +133,10 @@ async def load_session(session_id: str) -> SessionData:
 async def save_session(params: SaveSessionParams) -> SessionSaveResponse:
     # strip out UI artifacts
     state_copy = params.quest_state.dict()
-    state_copy.pop("ui", None)
+    if "ui" in state_copy and state_copy["ui"] is not None:
+        state_copy["ui"] = state_copy["ui"].dict()
+    if "geocoded_location" in state_copy and state_copy["geocoded_location"] is not None:
+        state_copy["geocoded_location"] = state_copy["geocoded_location"].dict()
     payload = {
         "quest_id":       params.session_id,
         "quest_state":    state_copy,
@@ -191,31 +207,28 @@ async def geocode_location(ctx: RunContextWrapper, location: str) -> GeocodeLoca
             message=f"Error fetching location data: {str(e)}",
             general_location=location,
             location_confirmed=False,
-            geocoded_location={},
+            geocoded_location=None,
             action="error",
-            ui={}
+            ui=None
         )
     if not data:
         return GeocodeLocationResponse(
             message=f"Sorry, I couldn't find '{location}'.",
             general_location=location,
             location_confirmed=False,
-            geocoded_location={},
+            geocoded_location=None,
             action="error",
-            ui={}
+            ui=None
         )
     result = data[0]
-    lat = result["lat"]
-    lon = result["lon"]
+    lat = float(result["lat"])
+    lon = float(result["lon"])
     map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
     ctx.context.quest_state["general_location"] = location
     ctx.context.quest_state["location_confirmed"] = False
-    ctx.context.quest_state["geocoded_location"] = {
-        "input": location,
-        "lat": lat,
-        "lon": lon,
-        "map_url": map_url
-    }
+    ctx.context.quest_state["geocoded_location"] = GeocodedLocationModel(
+        input=location, lat=lat, lon=lon, map_url=map_url
+    )
     return GeocodeLocationResponse(
         message=(
             f"I found a location match for '{location}': [View on Map]({map_url})\n"
@@ -229,7 +242,7 @@ async def geocode_location(ctx: RunContextWrapper, location: str) -> GeocodeLoca
         ),
         general_location=location,
         location_confirmed=False,
-        geocoded_location={"input": location, "lat": lat, "lon": lon, "map_url": map_url},
+        geocoded_location=GeocodedLocationModel(input=location, lat=lat, lon=lon, map_url=map_url),
         action="validate_location",
-        ui={"trigger": "location_confirm", "buttons": ["Yes", "No"]}
+        ui=UIModel(trigger="location_confirm", buttons=["Yes", "No"])
     )
