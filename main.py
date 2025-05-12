@@ -334,6 +334,27 @@ quest_agent = Agent(
     model="gpt-4o",
 )
 
+# === FALLBACK AGENT ===
+fallback_prompt = """You are a helpful assistant that generates appropriate messages based on the quest state and history.
+Your task is to generate a single message that:
+1. Acknowledges the user's last input
+2. Asks for the next required information based on the quest state
+3. Is conversational and natural
+
+Current quest state:
+{quest_state}
+
+Last few messages:
+{history}
+
+Generate a single message that continues the conversation naturally."""
+
+fallback_agent = Agent(
+    name="quest-fallback-agent",
+    instructions=fallback_prompt,
+    model="gpt-4o",
+)
+
 # === MAIN QUEST ROUTE ===
 @app.post("/start-quest")
 async def start_quest(request: Request):
@@ -363,7 +384,7 @@ async def start_quest(request: Request):
         result = await Runner.run(
             starting_agent=quest_agent,
             input=input_items,
-            context=context,  # context must be a class for mutability
+            context=context,
             run_config=RunConfig(workflow_name="quest_workflow")
         )
 
@@ -376,8 +397,30 @@ async def start_quest(request: Request):
                 extracted = json.loads(json_match.group(1))
                 context.quest_state.update(extracted)
                 logging.info("[start-quest] Extracted quest_state update: %s", json.dumps(extracted))
-                # Strip the JSON from the final output shown to user
-                clean_output = result.final_output[:json_match.start()].strip()
+                
+                # Get the message part before the JSON
+                message_part = result.final_output[:json_match.start()].strip()
+                
+                # If no explicit message, use fallback agent to generate one
+                if not message_part:
+                    # Get last 3 messages for context
+                    recent_history = history[-3:] if len(history) > 3 else history
+                    fallback_input = [
+                        {"role": "system", "content": fallback_prompt.format(
+                            quest_state=json.dumps(context.quest_state, indent=2),
+                            history="\n".join([f"{m['role']}: {m['content']}" for m in recent_history])
+                        )}
+                    ]
+                    fallback_result = await Runner.run(
+                        starting_agent=fallback_agent,
+                        input=fallback_input,
+                        context=context,
+                        run_config=RunConfig(workflow_name="fallback_workflow")
+                    )
+                    clean_output = fallback_result.final_output.strip()
+                else:
+                    clean_output = message_part
+                    
             except json.JSONDecodeError as e:
                 logging.warning("Could not parse JSON block from assistant output: %s", e)
                 clean_output = result.final_output
