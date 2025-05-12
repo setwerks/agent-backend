@@ -186,13 +186,21 @@ def load_session(quest_id: str):
     return data[0]
 
 def save_session(quest_id: str, quest_state: dict, chat_history: list):
+    # Remove UI state before saving
+    if 'ui' in quest_state:
+        quest_state.pop('ui')
+        
     payload = {
+        "quest_id": quest_id,
         "quest_state": quest_state,
         "chat_history": chat_history,
         "last_updated": datetime.utcnow().isoformat()
     }
-    res = requests.patch(f"{SUPABASE_API}?quest_id=eq.{quest_id}", json=payload, headers=SUPABASE_HEADERS)
+    
+    url = f"{SUPABASE_API}?quest_id=eq.{quest_id}"
+    res = requests.patch(url, headers=SUPABASE_HEADERS, json=payload)
     res.raise_for_status()
+    return res.json()
 
 # === AGENT PROMPT ===
 quest_prompt = """You are a helpful onboarding assistant for a quest app. You help users create a new quest by collecting the following information, step by step:
