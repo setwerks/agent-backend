@@ -73,8 +73,12 @@ def update_quest_state(ctx: RunContextWrapper, field: str, value: Any) -> str:
     return f"Saved `{field}`."
 
 # === CLASSIFICATION TOOL USING LLM ONLY ===
+class Classification(BaseModel):
+    general_category: str
+    sub_category: str  # or Optional[str]
+
 @function_tool
-async def classify_quest(text: str) -> dict:
+async def classify_quest(text: str) -> Classification:
     prompt = (
         "You are a classification assistant. Given a user query and a taxonomy of Craigslist-style categories, "
         "choose exactly one general_category and one sub_category from the taxonomy. "
@@ -97,12 +101,19 @@ async def classify_quest(text: str) -> dict:
     )
     data = response.json()
     try:
+        # Parse the assistant’s JSON output
         content = data["choices"][0]["message"]["content"].strip()
-        return json.loads(content)
+        parsed = json.loads(content)
+        # Construct a Classification, which Auto-validates and
+        # informs the schema generator of the exact fields.
+        return Classification(**parsed)
     except Exception as e:
         logging.error(f"Classification parse error: {e}, response: {data}")
-        return {"general_category": "general", "sub_category": None}
-
+        # Fallback to a safe default
+        return Classification(
+            general_category="general",
+            sub_category=""
+        )
 # === PROMPT TEMPLATES ===
 FOR_SALE_PROMPT = """
 You are a 'for sale' quest agent. Gather the item's title, price or price range, condition, and optionally photos. Then ask for the location or confirm it.
