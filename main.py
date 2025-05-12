@@ -186,13 +186,13 @@ def load_session(quest_id: str):
     return data[0]
 
 def save_session(quest_id: str, quest_state: dict, chat_history: list):
-    # Remove UI state before saving
-    if 'ui' in quest_state:
-        qs_ui_removed = quest_state.pop('ui')
-        logging.info("QUEST STATE: %s", qs_ui_removed)
+    # Create a copy of quest_state and remove UI
+    quest_state_copy = quest_state.copy()
+    quest_state_copy.pop('ui', None)
+        
     payload = {
         "quest_id": quest_id,
-        "quest_state": qs_ui_removed,
+        "quest_state": quest_state_copy,
         "chat_history": chat_history,
         "last_updated": datetime.utcnow().isoformat()
     }
@@ -366,7 +366,7 @@ async def start_quest(request: Request):
             context=context,  # context must be a class for mutability
             run_config=RunConfig(workflow_name="quest_workflow")
         )
-        logging.info("RESULT: %s", result.final_output)
+
         logging.info("Updated quest_state: %s", json.dumps(context.quest_state, indent=2))
         # Extract and store structured JSON block if present
         json_match = re.search(r"###JSON###\s*(\{.*\})", result.final_output, re.DOTALL)
