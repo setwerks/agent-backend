@@ -3,7 +3,7 @@ import json
 import logging
 import requests
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from pydantic import BaseModel
 from agents import function_tool
@@ -27,58 +27,61 @@ except Exception:
     logging.error(f"Failed to load taxonomy from {TAXONOMY_PATH}")
     TAXONOMY = {}
 
-# --- Pydantic models for structured outputs ---
+# --- Strict Pydantic models ---
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    model_config = {"extra": "forbid"}
+
+class QuestState(BaseModel):
+    want_or_have: Optional[str] = None
+    description: Optional[str] = None
+    general_location: Optional[str] = None
+    location_confirmed: bool = False
+    distance: Optional[float] = None
+    distance_unit: str = "mi"
+    price: Optional[float] = None
+    photos: List[str] = []
+    action: Optional[str] = None
+    ui: Optional[dict] = None
+    model_config = {"extra": "forbid"}
+
 class SessionData(BaseModel):
-    quest_state: Dict[str, Any]
-    chat_history: List[Any]
-    model_config = {
-        "extra": "forbid"
-    }
+    quest_state: QuestState
+    chat_history: List[ChatMessage]
+    model_config = {"extra": "forbid"}
+
+class SaveSessionParams(BaseModel):
+    session_id: str
+    quest_state: QuestState
+    chat_history: List[ChatMessage]
+    model_config = {"extra": "forbid"}
 
 class SessionSaveResponse(BaseModel):
     session_id: str
-    model_config = {
-        "extra": "forbid"
-    }
+    model_config = {"extra": "forbid"}
 
 class UpdateResponse(BaseModel):
     message: str
-    model_config = {
-        "extra": "forbid"
-    }
+    model_config = {"extra": "forbid"}
 
 class Classification(BaseModel):
     general_category: str
     sub_category: str
-    model_config = {
-        "extra": "forbid"
-    }
+    model_config = {"extra": "forbid"}
 
 class ConfirmLocationResponse(BaseModel):
     message: str
-    model_config = {
-        "extra": "forbid"
-    }
+    model_config = {"extra": "forbid"}
 
 class GeocodeLocationResponse(BaseModel):
     message: str
     general_location: str
     location_confirmed: bool
-    geocoded_location: Dict[str, Any]
+    geocoded_location: dict
     action: str
-    ui: Dict[str, Any]
-    model_config = {
-        "extra": "forbid"
-    }
-
-# --- Input models for strict schema ---
-class SaveSessionParams(BaseModel):
-    session_id: str
-    quest_state: Dict[str, Any]
-    chat_history: List[Any]
-    model_config = {
-        "extra": "forbid"
-    }
+    ui: Optional[dict]
+    model_config = {"extra": "forbid"}
 
 # === Session management tools ===
 @function_tool
@@ -87,7 +90,7 @@ async def load_session(session_id: str) -> SessionData:
     res = requests.get(url, headers=SUPABASE_HEADERS)
     if res.status_code != 200:
         logging.error("Supabase load_session error: %s %s", res.status_code, res.text)
-        return SessionData(quest_state={}, chat_history=[])
+        return SessionData(quest_state=QuestState(), chat_history=[])
     data = res.json()
     if not data:
         logging.info("Creating new session for session_id: %s", session_id)
@@ -99,29 +102,29 @@ async def load_session(session_id: str) -> SessionData:
         }
         create = requests.post(SUPABASE_API, headers=SUPABASE_HEADERS, json=init)
         create.raise_for_status()
-        return SessionData(quest_state={}, chat_history=[])
+        return SessionData(quest_state=QuestState(), chat_history=[])
     record = data[0]
     if data:
         record = data[0]
         logging.info(f"Supabase record: {record}")  # Log the entire record
         return SessionData(
-            quest_state=record.get("quest_state", {}),
-            chat_history=record.get("chat_history", [])
+            quest_state=QuestState(**record.get("quest_state", {})),
+            chat_history=[ChatMessage(**msg) for msg in record.get("chat_history", [])]
         )
     return SessionData(
-        quest_state=record.get("quest_state", {}),
-        chat_history=record.get("chat_history", [])
+        quest_state=QuestState(**record.get("quest_state", {})),
+        chat_history=[ChatMessage(**msg) for msg in record.get("chat_history", [])]
     )
 
 @function_tool
 async def save_session(params: SaveSessionParams) -> SessionSaveResponse:
     # strip out UI artifacts
-    state_copy = params.quest_state.copy()
+    state_copy = params.quest_state.dict()
     state_copy.pop("ui", None)
     payload = {
         "quest_id":       params.session_id,
         "quest_state":    state_copy,
-        "chat_history":   params.chat_history,
+        "chat_history":   [msg.dict() for msg in params.chat_history],
         "last_updated":   datetime.utcnow().isoformat(),
     }
     url = f"{SUPABASE_API}?quest_id=eq.{params.session_id}"
