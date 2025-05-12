@@ -188,11 +188,11 @@ def load_session(quest_id: str):
 def save_session(quest_id: str, quest_state: dict, chat_history: list):
     # Remove UI state before saving
     if 'ui' in quest_state:
-        quest_state
-        
+        qs_ui_removed = quest_state.pop('ui')
+        logging.info("QUEST STATE: %s", qs_ui_removed)
     payload = {
         "quest_id": quest_id,
-        "quest_state": quest_state.pop('ui'),
+        "quest_state": qs_ui_removed,
         "chat_history": chat_history,
         "last_updated": datetime.utcnow().isoformat()
     }
