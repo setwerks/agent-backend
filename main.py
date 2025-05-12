@@ -15,6 +15,7 @@ from agents import Agent, Runner, function_tool, RunConfig, RunContextWrapper, e
 from dataclasses import dataclass
 import tiktoken
 import copy
+import time
 
 def estimate_token_usage(messages: list, model: str = "gpt-4o") -> int:
     encoding = tiktoken.encoding_for_model(model)
@@ -358,6 +359,7 @@ fallback_agent = Agent(
 # === MAIN QUEST ROUTE ===
 @app.post("/start-quest")
 async def start_quest(request: Request):
+    t0 = time.time()
     try:
         body = await request.json()
         message = body.get("message")
@@ -367,6 +369,7 @@ async def start_quest(request: Request):
             return {"error": "Missing 'message' or 'quest_id'"}
 
         session = load_session(quest_id)
+        t1 = time.time()
         history = session.get("chat_history", [])
         quest_state = session.get("quest_state", {})
 
@@ -387,6 +390,7 @@ async def start_quest(request: Request):
             context=context,
             run_config=RunConfig(workflow_name="quest_workflow")
         )
+        t2 = time.time()
 
         logging.info("Updated quest_state: %s", json.dumps(context.quest_state, indent=2))
         # Extract and store structured JSON block if present
@@ -434,8 +438,10 @@ async def start_quest(request: Request):
             {"role": "assistant", "content": clean_output}
         ]
 
-        # Save the *modified* quest_state
         save_session(quest_id, context.quest_state, updated_history)
+        t3 = time.time()
+
+        logging.info(f"TIMING: load_session={t1-t0:.2f}s, agent_run={t2-t1:.2f}s, save_session={t3-t2:.2f}s, total={t3-t0:.2f}s")
 
         token_estimate = estimate_token_usage(input_items)
 
