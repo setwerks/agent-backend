@@ -172,7 +172,6 @@ async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) 
         return "Could not find city and state information in the geocoding result."
 
     formatted_address = f"{city}, {state}"
-    map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=12/{lat}/{lon}"
     # Google Static Maps image
     static_map_url = (
         f"https://maps.googleapis.com/maps/api/staticmap"
@@ -186,7 +185,6 @@ async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) 
         "input": location,
         "lat": lat,
         "lon": lon,
-        "map_url": map_url,
         "static_map_url": static_map_url,
         "formatted_address": formatted_address,
     }
@@ -200,7 +198,6 @@ async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) 
             "input": location,
             "lat": lat,
             "lon": lon,
-            "map_url": map_url,
             "static_map_url": static_map_url,
             "formatted_address": formatted_address,
         },
@@ -212,11 +209,9 @@ async def geocode_location(ctx: RunContextWrapper[QuestContext], location: str) 
     }
 
     return (
-        f"I found a location match for '{location}': [View on Map]({map_url})\n"
-        f"![Map Image]({static_map_url})\n"
+        f"I found a location match for '{location}'.\n"
         f"Is this the correct location?\n\n###JSON###\n{json.dumps(json_output, indent=2)}"
-    )
-# === TOOL 2: Create quest ===
+    )# === TOOL 2: Create quest ===
 class QuestData(BaseModel):
     want_or_have: Optional[str] = None
     description: Optional[str] = None
