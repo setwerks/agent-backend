@@ -31,34 +31,34 @@ except Exception:
 class SessionData(BaseModel):
     quest_state: Dict[str, Any]
     chat_history: List[Any]
-
-    class Config:
-        extra = "ignore"
+    model_config = {
+        "extra": "forbid"
+    }
 
 class SessionSaveResponse(BaseModel):
     session_id: str
-
-    class Config:
-        extra = "ignore"
+    model_config = {
+        "extra": "forbid"
+    }
 
 class UpdateResponse(BaseModel):
     message: str
-
-    class Config:
-        extra = "ignore"
+    model_config = {
+        "extra": "forbid"
+    }
 
 class Classification(BaseModel):
     general_category: str
     sub_category: str
-
-    class Config:
-        extra = "ignore"
+    model_config = {
+        "extra": "forbid"
+    }
 
 class ConfirmLocationResponse(BaseModel):
     message: str
-
-    class Config:
-        extra = "ignore"
+    model_config = {
+        "extra": "forbid"
+    }
 
 class GeocodeLocationResponse(BaseModel):
     message: str
@@ -67,18 +67,18 @@ class GeocodeLocationResponse(BaseModel):
     geocoded_location: Dict[str, Any]
     action: str
     ui: Dict[str, Any]
-
-    class Config:
-        extra = "ignore"
+    model_config = {
+        "extra": "forbid"
+    }
 
 # --- Input models for strict schema ---
 class SaveSessionParams(BaseModel):
     session_id: str
     quest_state: Dict[str, Any]
     chat_history: List[Any]
-
-    class Config:
-        extra = "ignore"
+    model_config = {
+        "extra": "forbid"
+    }
 
 # === Session management tools ===
 @function_tool
