@@ -58,7 +58,7 @@ class GeocodeLocationResponse(BaseModel):
         extra = "forbid"
 
 # === SESSION MANAGEMENT TOOLS ===
-@function_tool
+@function_tool(strict=False)
 async def load_session(session_id: str) -> SessionData:
     url = f"{SUPABASE_API}?quest_id=eq.{session_id}"
     res = requests.get(url, headers=SUPABASE_HEADERS)
@@ -83,7 +83,7 @@ async def load_session(session_id: str) -> SessionData:
         chat_history=record.get("chat_history", [])
     )
 
-@function_tool
+@function_tool(strict=False)
 async def save_session(session_id: str, quest_state: Dict[str, Any], chat_history: List[Any]) -> SessionSaveResponse:
     state_copy = quest_state.copy()
     state_copy.pop("ui", None)
@@ -98,14 +98,14 @@ async def save_session(session_id: str, quest_state: Dict[str, Any], chat_histor
     res.raise_for_status()
     return SessionSaveResponse(session_id=session_id)
 
-@function_tool
+@function_tool(strict=False)
 def update_quest_state(ctx: RunContextWrapper, field: str, value: Any) -> UpdateResponse:
     ctx.context.quest_state[field] = value
     logging.info("[update_quest_state] Set %s = %s", field, value)
     return UpdateResponse(message=f"Saved `{field}`.")
 
 # === CLASSIFICATION TOOL ===
-@function_tool
+@function_tool(strict=False)
 async def classify_quest(text: str) -> Classification:
     prompt = (
         "You are a classification assistant. Given a user query and a taxonomy of Craigslist-style categories, "
@@ -137,13 +137,13 @@ async def classify_quest(text: str) -> Classification:
         return Classification(general_category="general", sub_category="")
 
 # === LOCATION TOOLS ===
-@function_tool
+@function_tool(strict=False)
 def confirm_location(ctx: RunContextWrapper) -> ConfirmLocationResponse:
     ctx.context.quest_state["location_confirmed"] = True
     logging.info("[confirm_location] Set location_confirmed = True")
     return ConfirmLocationResponse(message="✅ Location confirmed.")
 
-@function_tool
+@function_tool(strict=False)
 async def geocode_location(ctx: RunContextWrapper, location: str) -> GeocodeLocationResponse:
     logging.info("[geocode_location] Tool called")
     url = "https://nominatim.openstreetmap.org/search"
