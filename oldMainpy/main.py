@@ -47,46 +47,6 @@ SUPABASE_HEADERS = {
     "Content-Type": "application/json"
 }
 
-def build_dynamic_prompt(quest_state, history):
-    action = quest_state.get("action")
-    description = quest_state.get("description")
-    location = quest_state.get("general_location")
-    price = quest_state.get("price")
-    distance = quest_state.get("distance")
-    distance_unit = quest_state.get("distance_unit")
-    want_or_have = quest_state.get("want_or_have")
-
-    if action == "ask_for_price":
-        return (
-            f"You are helping a user set a price for their quest.\n"
-            f"Current description: {description}\n"
-            f"Current location: {location}\n"
-            f"Ask the user for their price or budget."
-        )
-    elif action == "offer_photos":
-        return (
-            f"You are helping a user upload photos for their quest.\n"
-            f"Current description: {description}\n"
-            f"Ask if they want to upload photos."
-        )
-    elif action == "ask_for_distance":
-        return (
-            f"You are helping a user set a search distance for their quest.\n"
-            f"Current description: {description}\n"
-            f"Current location: {location}\n"
-            f"Ask how far they are willing to look ({distance_unit})."
-        )
-    elif action == "validate_location":
-        return (
-            f"You are helping a user confirm their location for a quest.\n"
-            f"Current location: {location}\n"
-            f"Ask the user to confirm or correct their location."
-        )
-    # Add more action-specific prompts as needed
-
-    # Fallback to the full prompt
-    return quest_prompt
-
 os.makedirs("uploads", exist_ok=True)
 app = FastAPI()
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -424,16 +384,8 @@ async def start_quest(request: Request):
         # Use structured context object so quest_state is mutable
         context = QuestContext(quest_state=quest_state)
 
-        dynamic_prompt = build_dynamic_prompt(quest_state, history)
-        dynamic_agent = Agent(
-            name="quest-onboarding-agent-2",
-            instructions=dynamic_prompt,
-            tools=[geocode_location, create_quest, update_quest_state, confirm_location],
-            model="gpt-4o",
-        )
-        logging.info(f"Using dynamic prompt for action: {quest_state.get('action')}")
         result = await Runner.run(
-            starting_agent=dynamic_agent,
+            starting_agent=quest_agent,
             input=input_items,
             context=context,
             run_config=RunConfig(workflow_name="quest_workflow")
