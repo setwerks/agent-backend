@@ -200,7 +200,7 @@ def save_session(quest_id: str, quest_state: dict, chat_history: list):
     url = f"{SUPABASE_API}?quest_id=eq.{quest_id}"
     res = requests.patch(url, headers=SUPABASE_HEADERS, json=payload)
     res.raise_for_status()
-    return res.json()
+    # Don't try to parse response as JSON since PATCH doesn't return any
 
 # === AGENT PROMPT ===
 quest_prompt = """You are a helpful onboarding assistant for a quest app. You help users create a new quest by collecting the following information, step by step:
