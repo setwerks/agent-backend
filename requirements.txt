@@ -1,7 +1,9 @@
-openai-agents
-fastapi>=0.110.0
-uvicorn>=0.27.0
-pydantic
-requests
-python-dotenv
-tiktoken>=0.5.1
+fastapi>=0.68.0
+uvicorn>=0.15.0
+python-dotenv>=0.19.0
+requests>=2.26.0
+google-cloud-aiplatform>=1.38.0
+google-auth>=2.0.0
+pydantic>=2.0.0
+python-multipart>=0.0.5
+google-genai>=0.6.0
