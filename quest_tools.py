@@ -90,7 +90,9 @@ async def save_session(session_id: str, quest_state: Dict[str, Any], chat_histor
 async def update_quest_state(session_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
     """Update quest state in Supabase."""
     current = await load_session(session_id)
+    logging.info(f"[update_quest_state] Current quest_state: {current['quest_state']}")
     current["quest_state"].update(updates)
+    logging.info(f"[update_quest_state] Updated quest_state: {current['quest_state']}")
     await save_session(session_id, current["quest_state"], current["chat_history"])
     return current["quest_state"]
 
