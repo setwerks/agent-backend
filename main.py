@@ -1,4 +1,5 @@
 import os
+import logging
 from dotenv import load_dotenv
 
 # Load environment vars first
@@ -37,9 +38,8 @@ logging.info("GOOGLE_APPLICATION_CREDENTIALS:", os.getenv("GOOGLE_APPLICATION_CR
 logging.info("service-account.json exists:", os.path.exists("service-account.json"))
 if os.path.exists("service-account.json"):
     with open("service-account.json") as f:
-        print("service-account.json contents:", f.read())
+        logging.info("service-account.json contents:", f.read())
 import json
-import logging
 import uvicorn
 from uuid import uuid4
 from fastapi import FastAPI, Request, UploadFile, File
