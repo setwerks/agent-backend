@@ -93,6 +93,27 @@ def safe_json_parse(response: str) -> dict:
     import re
     import json
     logging.info(f"Safe JSON Response: {response}")
+    
+    # Try to find JSON blocks with triple backticks first
+    code_block_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+    if code_block_match:
+        try:
+            json_str = code_block_match.group(1)
+            logging.info(f"Found JSON in code block: {json_str}")
+            return json.loads(json_str)
+        except Exception as e:
+            logging.error(f"Failed to parse JSON from code block: {e}")
+    
+    # Try to find JSON blocks with ###JSON### marker
+    json_marker_match = re.search(r'###JSON###\s*(\{.*?\})', response, re.DOTALL)
+    if json_marker_match:
+        try:
+            json_str = json_marker_match.group(1)
+            logging.info(f"Found JSON with marker: {json_str}")
+            return json.loads(json_str)
+        except Exception as e:
+            logging.error(f"Failed to parse JSON with marker: {e}")
+    
     # Find all JSON objects in the response
     matches = re.findall(r'({[^{}]+(?:{[^{}]*}[^{}]*)*})', response, re.DOTALL)
     if matches:
@@ -104,6 +125,7 @@ def safe_json_parse(response: str) -> dict:
                 return json.loads(m)
             except Exception as e:
                 logging.error(f"Failed to parse JSON block: {e} | {m}")
+    
     logging.error(f"Failed to extract JSON, returning empty dict. Response: {response}")
     return {}
 
@@ -156,11 +178,14 @@ async def process_quest(
 ) -> Dict[str, Any]:
     """Process a quest using Vertex AI."""
     # Classify quest
+    logging.info(f"Processing quest: {quest_text}")
     classification = await classify_quest(quest_text)
+    logging.info(f"Classification result: {classification}")
     
     # Get category-specific prompt
     category = classification.get("general_category", "generic")
     prompt = get_category_prompt(category)
+    logging.info(f"Using category: {category}")
     
     # Process with category-specific prompt
     messages = [
@@ -168,14 +193,19 @@ async def process_quest(
         *chat_history,
         {"role": "user", "content": quest_text}
     ]
+    logging.info(f"Sending messages to Vertex AI: {messages}")
     response = get_vertex_chat_response(messages)
+    logging.info(f"Raw Vertex AI response: {response}")
     result = safe_json_parse(response)
+    logging.info(f"Parsed result: {result}")
     
     # Update state
-    await update_quest_state(session_id, {
+    state_update = {
         **classification,
         **result
-    })
+    }
+    logging.info(f"Updating quest state with: {state_update}")
+    await update_quest_state(session_id, state_update)
     
     return result
 

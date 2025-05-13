@@ -70,38 +70,54 @@ class QuestResponse(BaseModel):
 
 @app.post("/start-quest", response_model=QuestResponse)
 async def start_quest(request: QuestRequest):
-    # Generate or use provided session ID
-    session_id = request.session_id or str(uuid4())
-    
-    # Load previous session
-    session = await load_session(session_id)
-    chat_history = session.get("chat_history", [])
-    quest_state = session.get("quest_state", {})
-    
-    # Append user message to history
-    chat_history.append({"role": "user", "content": request.message})
-    
-    # Process quest
-    result = await process_quest(
-        quest_text=request.message,
-        session_id=session_id,
-        chat_history=chat_history
-    )
-    
-    # Update chat history with assistant response
-    chat_history.append({"role": "assistant", "content": json.dumps(result)})
-    
-    # Save session
-    # Reload quest_state after process_quest (it updates quest_state)
-    session = await load_session(session_id)
-    quest_state = session.get("quest_state", {})
-    await save_session(session_id, quest_state, chat_history)
-    
-    return QuestResponse(
-        status="ok",
-        session_id=session_id,
-        quest_state=quest_state
-    )
+    try:
+        logging.info("/start-quest endpoint called with: %s", request)
+        # Generate or use provided session ID
+        session_id = request.session_id or str(uuid4())
+        logging.info(f"Using session_id: {session_id}")
+        
+        # Load previous session
+        session = await load_session(session_id)
+        logging.info(f"Loaded session: {session}")
+        chat_history = session.get("chat_history", [])
+        quest_state = session.get("quest_state", {})
+        logging.info(f"Initial chat_history: {chat_history}")
+        logging.info(f"Initial quest_state: {quest_state}")
+        
+        # Append user message to history
+        chat_history.append({"role": "user", "content": request.message})
+        logging.info(f"Appended user message. chat_history now: {chat_history}")
+        
+        # Process quest
+        logging.info("Calling process_quest...")
+        result = await process_quest(
+            quest_text=request.message,
+            session_id=session_id,
+            chat_history=chat_history
+        )
+        logging.info(f"process_quest result: {result}")
+        
+        # Update chat history with assistant response
+        chat_history.append({"role": "assistant", "content": json.dumps(result)})
+        logging.info(f"Appended assistant response. chat_history now: {chat_history}")
+        
+        # Save session
+        # Reload quest_state after process_quest (it updates quest_state)
+        session = await load_session(session_id)
+        quest_state = session.get("quest_state", {})
+        logging.info(f"Reloaded session after process_quest: {session}")
+        logging.info(f"Reloaded quest_state: {quest_state}")
+        await save_session(session_id, quest_state, chat_history)
+        logging.info(f"Session saved for session_id: {session_id}")
+        
+        return QuestResponse(
+            status="ok",
+            session_id=session_id,
+            quest_state=quest_state
+        )
+    except Exception as e:
+        logging.exception("Error in /start-quest endpoint")
+        raise
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
