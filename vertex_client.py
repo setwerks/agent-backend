@@ -89,21 +89,17 @@ def get_vertex_chat_response(
         max_output_tokens=max_tokens,
     )
     try:
-        # Get streaming response
-        response_chunks = client.models.generate_content_stream(
+        # Use non-streaming mode
+        response = client.models.generate_content(
             model=model_id,
             contents=contents,
             config=config,
         )
         
-        # Buffer all chunks
-        chunks = []
-        for chunk in response_chunks:
-            if hasattr(chunk, "text") and chunk.text:
-                chunks.append(str(chunk.text))
-        
-        # Join all chunks
-        raw_response = "".join(chunks)
+        if not response.text:
+            raise ValueError("Empty response from Gemini")
+            
+        raw_response = str(response.text)
         logging.info(f"Raw Gemini response: {raw_response}")
         
         # Clean and parse JSON
