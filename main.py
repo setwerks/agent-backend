@@ -47,6 +47,7 @@ from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from routes.quests import router as quests_router
 
 from quest_tools import (
     load_session,
@@ -57,6 +58,7 @@ from quest_tools import (
 
 # === FASTAPI SETUP ===
 app = FastAPI()
+app.include_router(quests_router)
 #app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 class QuestRequest(BaseModel):
