@@ -3,10 +3,36 @@ from dotenv import load_dotenv
 
 # Load environment vars first
 load_dotenv(override=True)  # override=True ensures .env values take precedence
+
 if os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON"):
     with open("service-account.json", "w") as f:
         f.write(os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON"))
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "service-account.json"
+else:
+    # Reconstruct from individual GOOGLE_* env vars if present
+    required_keys = [
+        "TYPE", "PROJECT_ID", "PRIVATE_KEY_ID", "PRIVATE_KEY", "CLIENT_EMAIL", "CLIENT_ID",
+        "AUTH_URI", "TOKEN_URI", "AUTH_PROVIDER_X509_CERT_URL", "CLIENT_X509_CERT_URL"
+    ]
+    service_account = {}
+    found = False
+    for key in required_keys:
+        env_key = f"GOOGLE_{key}"
+        value = os.getenv(env_key)
+        if value:
+            found = True
+            if key == "PRIVATE_KEY":
+                value = value.replace("\\n", "\n")
+            service_account[key.lower()] = value
+    # Optional universe_domain
+    universe_domain = os.getenv("GOOGLE_UNIVERSE_DOMAIN")
+    if universe_domain:
+        service_account["universe_domain"] = universe_domain
+    if found:
+        with open("service-account.json", "w") as f:
+            import json
+            json.dump(service_account, f)
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "service-account.json"
 
 import json
 import logging
