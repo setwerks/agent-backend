@@ -92,8 +92,11 @@ async def update_quest_state(session_id: str, updates: Dict[str, Any]) -> Dict[s
 def safe_json_parse(response: str) -> dict:
     import re
     logging.info(f"Safe JSON Response: {response}")
-    # Try to extract JSON from ###JSON### block, possibly with triple backticks inside
-    match = re.search(r"###JSON###.*?({.*?})[\s`]*###JSON###", response, re.DOTALL)
+    # Try to extract JSON from ###JSON### block with triple backticks and optional json tag
+    match = re.search(r"###JSON###.*?```(?:json)?\s*({.*?})\s*```.*?###JSON###", response, re.DOTALL)
+    if not match:
+        # Try ###JSON### block without backticks
+        match = re.search(r"###JSON###\s*({.*?})\s*###JSON###", response, re.DOTALL)
     if not match:
         # Try triple backticks outside of ###JSON###
         match = re.search(r"```(?:json)?\s*({.*?})\s*```", response, re.DOTALL)
