@@ -61,7 +61,7 @@ Example output:
 {
   "text": "Is your location San Francisco?",
   "want_or_have": "have",
-  "title": "iPhone 12",
+  "description": "iPhone 12",
   "price": null,
   "condition": null,
   "location": "San Francisco",
