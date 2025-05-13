@@ -10,7 +10,7 @@ from quest_prompts import FOR_SALE_PROMPT, HOUSING_PROMPT, JOBS_PROMPT, SERVICES
 
 # === SUPABASE CONFIG ===
 SUPABASE_API = os.getenv("SUPABASE_API")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 # Local storage for development/testing
 LOCAL_SESSIONS: Dict[str, Dict[str, Any]] = {}
@@ -21,66 +21,71 @@ with open("taxonomy.json", "r") as f:
 
 # === SESSION MANAGEMENT TOOLS USING SUPABASE ===
 async def load_session(session_id: str) -> Dict[str, Any]:
-    """Load session data from Supabase or local storage."""
+    logging.info(f"[load_session] Loading session: {session_id}")
     if not SUPABASE_API or not SUPABASE_KEY:
-        # Use local storage if Supabase is not configured
-        return LOCAL_SESSIONS.get(session_id, {
+        session = LOCAL_SESSIONS.get(session_id, {
             "quest_state": {},
             "chat_history": []
         })
-    
+        logging.info(f"[load_session] Loaded from LOCAL_SESSIONS: {session}")
+        return session
     try:
         response = requests.get(
-            f"{SUPABASE_API}/quest_sessions?id=eq.{session_id}",
+            f"{SUPABASE_API}/rest/v1/quest_sessions?quest_id=eq.{session_id}",
             headers={
                 "apikey": SUPABASE_KEY,
                 "Authorization": f"Bearer {SUPABASE_KEY}",
                 "Content-Type": "application/json"
             }
         )
+        logging.info(f"[load_session] Supabase GET status: {response.status_code}, response: {response.text}")
         if response.status_code == 200 and response.json():
+            logging.info(f"[load_session] Session found in Supabase: {session_id}")
             return response.json()[0]
+        else:
+            logging.info(f"[load_session] No session found in Supabase for: {session_id}")
     except Exception as e:
-        logging.error(f"Error loading session from Supabase: {e}")
-    
+        logging.error(f"[load_session] Error loading session from Supabase: {e}")
     return {
         "quest_state": {},
         "chat_history": []
     }
 
 async def save_session(session_id: str, quest_state: Dict[str, Any], chat_history: List[Dict[str, str]]) -> None:
-    """Save session data to Supabase or local storage."""
+    logging.info(f"[save_session] Saving session: {session_id} with quest_state: {quest_state} and chat_history: {chat_history}")
     if not SUPABASE_API or not SUPABASE_KEY:
-        # Use local storage if Supabase is not configured
         LOCAL_SESSIONS[session_id] = {
             "quest_state": quest_state,
             "chat_history": chat_history
         }
+        logging.info(f"[save_session] Saved to LOCAL_SESSIONS: {LOCAL_SESSIONS[session_id]}")
         return
-    
     try:
         data = {
-            "id": session_id,
+            "quest_id": session_id,
             "quest_state": quest_state,
             "chat_history": chat_history,
-            "updated_at": "now()"
+            "last_updated": "now()"
         }
-        requests.post(
-            f"{SUPABASE_API}/quest_sessions",
+        response = requests.post(
+            f"{SUPABASE_API}/rest/v1/quest_sessions",
             headers={
                 "apikey": SUPABASE_KEY,
                 "Authorization": f"Bearer {SUPABASE_KEY}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates"
             },
             json=data
         )
+        logging.info(f"[save_session] Supabase POST status: {response.status_code}, response: {response.text}")
     except Exception as e:
-        logging.error(f"Error saving session to Supabase: {e}")
+        logging.error(f"[save_session] Error saving session to Supabase: {e}")
         # Fallback to local storage
         LOCAL_SESSIONS[session_id] = {
             "quest_state": quest_state,
             "chat_history": chat_history
         }
+        logging.info(f"[save_session] Fallback saved to LOCAL_SESSIONS: {LOCAL_SESSIONS[session_id]}")
 
 async def update_quest_state(session_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
     """Update quest state in Supabase."""
