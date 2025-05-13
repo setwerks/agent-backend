@@ -61,11 +61,9 @@ async def save_session(session_id: str, quest_state: Dict[str, Any], chat_histor
         logging.info(f"[save_session] Saved to LOCAL_SESSIONS: {LOCAL_SESSIONS[session_id]}")
         return
     try:
-        # Remove 'ui' from quest_state before saving, but keep the rest
-        quest_state_noui = {k: v for k, v in quest_state.items() if k != "ui"}
         data = {
             "quest_id": session_id,
-            "quest_state": quest_state_noui,
+            "quest_state": quest_state,
             "chat_history": chat_history,
             "last_updated": "now()"
         }
@@ -93,8 +91,7 @@ async def update_quest_state(session_id: str, updates: Dict[str, Any]) -> Dict[s
     """Update quest state in Supabase."""
     current = await load_session(session_id)
     current["quest_state"].update(updates)
-    quest_state_noui = {k: v for k, v in current["quest_state"].items() if k != "ui"}
-    await save_session(session_id, quest_state_noui, current["chat_history"])
+    await save_session(session_id, current["quest_state"], current["chat_history"])
     return current["quest_state"]
 
 def safe_json_parse(response: str) -> dict:

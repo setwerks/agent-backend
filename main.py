@@ -103,19 +103,16 @@ async def start_quest(request: QuestRequest):
         chat_history.append({"role": "assistant", "content": json.dumps(result)})
         logging.info(f"Appended assistant response. chat_history now: {chat_history}")
         
-        # Save session
-        # Reload quest_state after process_quest (it updates quest_state)
-        session = await load_session(session_id)
-        quest_state = session.get("quest_state", {})
-        logging.info(f"Reloaded session after process_quest: {session}")
-        logging.info(f"Reloaded quest_state: {quest_state}")
-        await save_session(session_id, quest_state, chat_history)
+        # Remove 'ui' before saving to Supabase
+        quest_state_to_save = {k: v for k, v in result.items() if k != "ui"}
+        await save_session(session_id, quest_state_to_save, chat_history)
         logging.info(f"Session saved for session_id: {session_id}")
         
+        # Return the full result (including 'ui') to the frontend
         return QuestResponse(
             status="ok",
             session_id=session_id,
-            quest_state=quest_state
+            quest_state=result
         )
     except Exception as e:
         logging.exception("Error in /start-quest endpoint")
