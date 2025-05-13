@@ -34,11 +34,12 @@ else:
             import json
             json.dump(service_account, f)
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "service-account.json"
-logging.info(f"GOOGLE_APPLICATION_CREDENTIALS: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
-logging.info(f"service-account.json exists: {os.path.exists('service-account.json')}")
+#logging.info(f"GOOGLE_APPLICATION_CREDENTIALS: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
+#logging.info(f"service-account.json exists: {os.path.exists('service-account.json')}")
 if os.path.exists("service-account.json"):
     with open("service-account.json") as f:
-        logging.info(f"service-account.json contents:", f.read())
+        #logging.info(f"service-account.json contents:", f.read())
+        pass
 import json
 import uvicorn
 from uuid import uuid4

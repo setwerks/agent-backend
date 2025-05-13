@@ -26,8 +26,23 @@ def clean_json_response(text: str) -> str:
     # Remove code fences and tags
     text = re.sub(r'```(?:json)?|###JSON###', '', text, flags=re.IGNORECASE).strip()
     
-    # Find all potential JSON blocks
-    json_blocks = re.findall(r'\{(?:[^{}]|(?R))*\}', text, re.DOTALL)
+    # Find all potential JSON blocks using a simpler pattern
+    # This looks for content between curly braces, handling nested braces
+    json_blocks = []
+    stack = []
+    start = -1
+    
+    for i, char in enumerate(text):
+        if char == '{':
+            if not stack:  # Start of a new block
+                start = i
+            stack.append(char)
+        elif char == '}':
+            if stack:
+                stack.pop()
+                if not stack and start != -1:  # End of a complete block
+                    json_blocks.append(text[start:i+1])
+                    start = -1
     
     # Try each block from largest to smallest
     for block in sorted(json_blocks, key=len, reverse=True):
