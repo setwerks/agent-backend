@@ -91,24 +91,19 @@ async def update_quest_state(session_id: str, updates: Dict[str, Any]) -> Dict[s
 
 def safe_json_parse(response: str) -> dict:
     import re
+    import json
     logging.info(f"Safe JSON Response: {response}")
-    # Try to extract JSON from ###JSON### block with triple backticks and optional json tag
-    match = re.search(r"###JSON###.*?```(?:json)?\s*({.*?})\s*```.*?###JSON###", response, re.DOTALL)
-    if not match:
-        # Try ###JSON### block without backticks
-        match = re.search(r"###JSON###\s*({.*?})\s*###JSON###", response, re.DOTALL)
-    if not match:
-        # Try triple backticks outside of ###JSON###
-        match = re.search(r"```(?:json)?\s*({.*?})\s*```", response, re.DOTALL)
-    if not match:
-        # Try any JSON object
-        match = re.search(r'({.*})', response, re.DOTALL)
-    if match:
-        try:
-            logging.info(f"Safe JSON Match: {match.group(1)}")
-            return json.loads(match.group(1))
-        except Exception as e:
-            logging.error(f"Failed to parse JSON: {e} | {match.group(1)}")
+    # Find all JSON objects in the response
+    matches = re.findall(r'({[^{}]+(?:{[^{}]*}[^{}]*)*})', response, re.DOTALL)
+    if matches:
+        # Try the largest one first
+        matches = sorted(matches, key=len, reverse=True)
+        for m in matches:
+            try:
+                logging.info(f"Trying to parse JSON block: {m}")
+                return json.loads(m)
+            except Exception as e:
+                logging.error(f"Failed to parse JSON block: {e} | {m}")
     logging.error(f"Failed to extract JSON, returning empty dict. Response: {response}")
     return {}
 
