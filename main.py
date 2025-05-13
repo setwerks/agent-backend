@@ -1,7 +1,7 @@
 import os
 import logging
 from dotenv import load_dotenv
-
+logging.basicConfig(level=logging.INFO)
 # Load environment vars first
 load_dotenv(override=True)  # override=True ensures .env values take precedence
 

@@ -90,30 +90,24 @@ async def update_quest_state(session_id: str, updates: Dict[str, Any]) -> Dict[s
     return current["quest_state"]
 
 def safe_json_parse(response: str) -> dict:
-    # Look for ###JSON### block
+    import re
     logging.info(f"Safe JSON Response: {response}")
-    match = re.search(r"###JSON###\s*({.*?})", response, re.DOTALL)
+    # Try to extract JSON from ###JSON### block, possibly with triple backticks inside
+    match = re.search(r"###JSON###.*?({.*?})[\s`]*###JSON###", response, re.DOTALL)
+    if not match:
+        # Try triple backticks outside of ###JSON###
+        match = re.search(r"```(?:json)?\s*({.*?})\s*```", response, re.DOTALL)
+    if not match:
+        # Try any JSON object
+        match = re.search(r'({.*})', response, re.DOTALL)
     if match:
         try:
             logging.info(f"Safe JSON Match: {match.group(1)}")
             return json.loads(match.group(1))
         except Exception as e:
-            logging.error(f"Failed to parse JSON from ###JSON### block: {e} | {match.group(1)}")
-    # Fallback: remove markdown/code block, try to parse first JSON object
-    cleaned = re.sub(r"^```(?:json)?\s*|```$", "", response.strip(), flags=re.IGNORECASE | re.MULTILINE)
-    try:
-        logging.info(f"Safe JSON Cleaned: {cleaned}")
-        return json.loads(cleaned)
-    except Exception:
-        # Try to extract any JSON object
-        match = re.search(r'\{.*\}', cleaned, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group(0))
-            except Exception:
-                pass
-        logging.error(f"Failed to parse response as JSON: {response}")
-        return {"text": response}
+            logging.error(f"Failed to parse JSON: {e} | {match.group(1)}")
+    logging.error(f"Failed to extract JSON, returning empty dict. Response: {response}")
+    return {}
 
 # === AI TOOLS ===
 async def classify_quest(quest_text: str, taxonomy: Dict[str, Any] = TAXONOMY) -> Dict[str, Any]:
