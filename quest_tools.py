@@ -212,7 +212,7 @@ async def process_quest(
     logging.info(f"Using category: {category}")
 
     # Build messages: system message with current quest state, then prompt, then chat history, then user message
-    system_message = {"role": "system", "content": f"Current quest state: {json.dumps(current_quest_state)}"}
+    system_message = {"role": "user", "content": f"Current quest state: {json.dumps(current_quest_state)}"}
     messages = [
         system_message,
         {"role": "user", "content": prompt},
