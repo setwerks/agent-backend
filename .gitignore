@@ -8,7 +8,7 @@ build/
 venv/
 .env
 .env.*
-
+service-account.json
 # macOS
 .DS_Store
 
