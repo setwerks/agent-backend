@@ -3,13 +3,10 @@ from dotenv import load_dotenv
 
 # Load environment vars first
 load_dotenv(override=True)  # override=True ensures .env values take precedence
-
-# Debug logging for environment variables
-print("Environment variables:")
-print(f"GOOGLE_APPLICATION_CREDENTIALS: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
-print(f"GOOGLE_CLOUD_PROJECT: {os.getenv('GOOGLE_CLOUD_PROJECT')}")
-print(f"GOOGLE_CLOUD_REGION: {os.getenv('GOOGLE_CLOUD_REGION')}")
-print(f"VERTEX_CHAT_MODEL_ID: {os.getenv('VERTEX_CHAT_MODEL_ID')}")
+if os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON"):
+    with open("service-account.json", "w") as f:
+        f.write(os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON"))
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "service-account.json"
 
 import json
 import logging
@@ -29,7 +26,7 @@ from quest_tools import (
 
 # === FASTAPI SETUP ===
 app = FastAPI()
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+#app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 class QuestRequest(BaseModel):
     session_id: Optional[str] = None
