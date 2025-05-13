@@ -28,6 +28,7 @@ async def load_session(session_id: str) -> Dict[str, Any]:
             "chat_history": []
         })
         logging.info(f"[load_session] Loaded from LOCAL_SESSIONS: {session}")
+        logging.info(f"[load_session] Loaded quest_state: {session.get('quest_state', {})}")
         return session
     try:
         response = requests.get(
@@ -40,8 +41,10 @@ async def load_session(session_id: str) -> Dict[str, Any]:
         )
         logging.info(f"[load_session] Supabase GET status: {response.status_code}, response: {response.text}")
         if response.status_code == 200 and response.json():
-            logging.info(f"[load_session] Session found in Supabase: {session_id}")
-            return response.json()[0]
+            session = response.json()[0]
+            logging.info(f"[load_session] Loaded session from Supabase: {session}")
+            logging.info(f"[load_session] Loaded quest_state: {session.get('quest_state', {})}")
+            return session
         else:
             logging.info(f"[load_session] No session found in Supabase for: {session_id}")
     except Exception as e:
