@@ -91,15 +91,18 @@ async def update_quest_state(session_id: str, updates: Dict[str, Any]) -> Dict[s
 
 def safe_json_parse(response: str) -> dict:
     # Look for ###JSON### block
+    logging.info(f"Safe JSON Response: {response}")
     match = re.search(r"###JSON###\s*({.*?})", response, re.DOTALL)
     if match:
         try:
+            logging.info(f"Safe JSON Match: {match.group(1)}")
             return json.loads(match.group(1))
         except Exception as e:
             logging.error(f"Failed to parse JSON from ###JSON### block: {e} | {match.group(1)}")
     # Fallback: remove markdown/code block, try to parse first JSON object
     cleaned = re.sub(r"^```(?:json)?\s*|```$", "", response.strip(), flags=re.IGNORECASE | re.MULTILINE)
     try:
+        logging.info(f"Safe JSON Cleaned: {cleaned}")
         return json.loads(cleaned)
     except Exception:
         # Try to extract any JSON object
