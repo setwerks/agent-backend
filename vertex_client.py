@@ -16,56 +16,6 @@ client = genai.Client(
     location=REGION,
 )
 
-def clean_json_response(text: str) -> str:
-    """
-    Clean up the response text by:
-    1. Removing code fences and tags
-    2. Finding the largest valid JSON block
-    3. Fixing common JSON formatting issues
-    """
-    # Remove code fences and tags
-    text = re.sub(r'```(?:json)?|###JSON###', '', text, flags=re.IGNORECASE).strip()
-    
-    # Find all potential JSON blocks using a simpler pattern
-    # This looks for content between curly braces, handling nested braces
-    json_blocks = []
-    stack = []
-    start = -1
-    
-    for i, char in enumerate(text):
-        if char == '{':
-            if not stack:  # Start of a new block
-                start = i
-            stack.append(char)
-        elif char == '}':
-            if stack:
-                stack.pop()
-                if not stack and start != -1:  # End of a complete block
-                    json_blocks.append(text[start:i+1])
-                    start = -1
-    
-    # Try each block from largest to smallest
-    for block in sorted(json_blocks, key=len, reverse=True):
-        try:
-            # Try to parse as is
-            json.loads(block)
-            return block
-        except json.JSONDecodeError:
-            # Try to fix common issues
-            try:
-                # Remove trailing commas
-                fixed = re.sub(r',\s*}', '}', block)
-                fixed = re.sub(r',\s*]', ']', fixed)
-                # Fix missing quotes around keys
-                fixed = re.sub(r'([{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', fixed)
-                json.loads(fixed)
-                return fixed
-            except json.JSONDecodeError:
-                continue
-    
-    # If no valid JSON found, return the original text
-    return text
-
 def get_vertex_chat_response(
     messages: List[Dict[str, str]],
     temperature: float = 0.2,
@@ -99,14 +49,20 @@ def get_vertex_chat_response(
         if not response.text:
             raise ValueError("Empty response from Gemini")
             
-        raw_response = str(response.text)
-        logging.info(f"Raw Gemini response: {raw_response}")
+        # Basic cleanup - just remove code fences and tags
+        text = str(response.text)
+        text = re.sub(r'```(?:json)?|###JSON###', '', text, flags=re.IGNORECASE).strip()
         
-        # Clean and parse JSON
-        cleaned_response = clean_json_response(raw_response)
-        logging.info(f"Cleaned response: {cleaned_response}")
+        logging.info(f"Raw Gemini response: {text}")
         
-        return cleaned_response
+        # Try to parse as JSON
+        try:
+            parsed = json.loads(text)
+            return json.dumps(parsed)  # Return formatted JSON
+        except json.JSONDecodeError as e:
+            logging.error(f"JSON parse error: {e}")
+            return text  # Return original text if JSON parsing fails
+            
     except Exception as e:
         logging.error(f"Error in get_vertex_chat_response: {e}")
         raise
