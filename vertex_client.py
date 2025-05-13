@@ -1,6 +1,8 @@
 import os
 import logging
-from typing import List, Dict, Any
+import re
+import json
+from typing import List, Dict, Any, Optional
 from google import genai
 
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
@@ -13,6 +15,41 @@ client = genai.Client(
     project=PROJECT_ID,
     location=REGION,
 )
+
+def clean_json_response(text: str) -> str:
+    """
+    Clean up the response text by:
+    1. Removing code fences and tags
+    2. Finding the largest valid JSON block
+    3. Fixing common JSON formatting issues
+    """
+    # Remove code fences and tags
+    text = re.sub(r'```(?:json)?|###JSON###', '', text, flags=re.IGNORECASE).strip()
+    
+    # Find all potential JSON blocks
+    json_blocks = re.findall(r'\{(?:[^{}]|(?R))*\}', text, re.DOTALL)
+    
+    # Try each block from largest to smallest
+    for block in sorted(json_blocks, key=len, reverse=True):
+        try:
+            # Try to parse as is
+            json.loads(block)
+            return block
+        except json.JSONDecodeError:
+            # Try to fix common issues
+            try:
+                # Remove trailing commas
+                fixed = re.sub(r',\s*}', '}', block)
+                fixed = re.sub(r',\s*]', ']', fixed)
+                # Fix missing quotes around keys
+                fixed = re.sub(r'([{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', fixed)
+                json.loads(fixed)
+                return fixed
+            except json.JSONDecodeError:
+                continue
+    
+    # If no valid JSON found, return the original text
+    return text
 
 def get_vertex_chat_response(
     messages: List[Dict[str, str]],
@@ -37,16 +74,28 @@ def get_vertex_chat_response(
         max_output_tokens=max_tokens,
     )
     try:
+        # Get streaming response
         response_chunks = client.models.generate_content_stream(
             model=model_id,
             contents=contents,
             config=config,
         )
-        # Collect all chunk.text, skipping None values
-        texts = [str(chunk.text) for chunk in response_chunks if getattr(chunk, "text", None)]
-        full_response = "".join(texts)
-        print(f"Gemini response: {full_response}")
-        return full_response
+        
+        # Buffer all chunks
+        chunks = []
+        for chunk in response_chunks:
+            if hasattr(chunk, "text") and chunk.text:
+                chunks.append(str(chunk.text))
+        
+        # Join all chunks
+        raw_response = "".join(chunks)
+        logging.info(f"Raw Gemini response: {raw_response}")
+        
+        # Clean and parse JSON
+        cleaned_response = clean_json_response(raw_response)
+        logging.info(f"Cleaned response: {cleaned_response}")
+        
+        return cleaned_response
     except Exception as e:
         logging.error(f"Error in get_vertex_chat_response: {e}")
         raise
