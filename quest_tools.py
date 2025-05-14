@@ -272,7 +272,7 @@ async def process_quest(
         system_message,
         {"role": "user", "content": prompt},
         *chat_history,
-        {"role": "user", "content": quest_text}
+        {"role": "user", "content": f"Respond to the user's message: {quest_text}"}
     ]
     #logging.info(f"Sending messages to Vertex AI: {messages}")
     response = get_vertex_chat_response(messages)
