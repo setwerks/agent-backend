@@ -56,18 +56,64 @@ class QuestState(BaseModel):
     pay_rate: Optional[float] = None
     portfolio: Optional[List[str]] = None
 
-class QuestCreateRequest(QuestState):
-    user_id: str
+class QuestCreateRequest(BaseModel):
+    # Required fields
+    quest_id: str
+    want_or_have: str
+    description: str
+    
+    # Optional fields that we want to save
+    general_location: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    distance: Optional[float] = None
+    photos: Optional[List[str]] = Field(default_factory=list)
+    
+    # Category-specific fields
+    condition: Optional[str] = None
+    property_type: Optional[str] = None
+    budget: Optional[float] = None
+    move_in_date: Optional[str] = None
+    job_role: Optional[str] = None
+    employment_type: Optional[str] = None
+    industry: Optional[str] = None
+    experience_level: Optional[str] = None
+    work_location: Optional[str] = None
+    service_type: Optional[str] = None
+    timeframe: Optional[str] = None
+    qualifications: Optional[str] = None
+    activity: Optional[str] = None
+    date_time: Optional[str] = None
+    meetup_location: Optional[str] = None
+    group_size: Optional[int] = None
+    cost: Optional[float] = None
+    gig_type: Optional[str] = None
+    duration: Optional[str] = None
+    pay_rate: Optional[float] = None
+    portfolio: Optional[List[str]] = None
 
 @router.post("/api/quests/save")
 async def create_quest(request: QuestCreateRequest):
-    # Validate required fields (Pydantic does this, but you can add more)
-    if not request.want_or_have or not request.description or not request.user_id:
+    # Validate required fields
+    if not request.want_or_have or not request.description or not request.quest_id:
         raise HTTPException(status_code=400, detail="Missing required fields")
 
-    # Prepare data for Supabase
-    data = request.dict()
+    # Load session state to ensure we have validated data
     try:
+        session = await load_session(request.quest_id)
+        quest_state = session.get("quest_state", {})
+        
+        # Merge request data with validated quest state
+        data = {
+            **quest_state,  # Start with validated quest state
+            **request.dict(exclude_unset=True)  # Override with request data
+        }
+        
+        # Remove UI and other non-database fields
+        data.pop("ui", None)
+        data.pop("action", None)
+        data.pop("text", None)
+        
         response = requests.post(
             f"{SUPABASE_API}/rest/v1/quests",
             headers={
