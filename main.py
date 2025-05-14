@@ -111,7 +111,10 @@ async def start_quest(request: QuestRequest):
             
             # Remove 'ui' before saving to Supabase
             quest_state_to_save = {k: v for k, v in result.items() if k != "ui"}
-            await save_session(session_id, quest_state_to_save, chat_history)
+            # Pass general_category and sub_category from session or result
+            general_category = result.get("general_category") or session.get("general_category")
+            sub_category = result.get("sub_category") or session.get("sub_category")
+            await save_session(session_id, quest_state_to_save, chat_history, general_category, sub_category)
             logging.info(f"Session saved for session_id: {session_id}")
             
             # Return the full result (including 'ui') to the frontend

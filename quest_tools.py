@@ -55,12 +55,23 @@ async def load_session(session_id: str) -> Dict[str, Any]:
         "chat_history": []
     }
 
-async def save_session(session_id: str, quest_state: Dict[str, Any], chat_history: List[Dict[str, str]]) -> None:
-    logging.info(f"[save_session] Saving session: {session_id} with quest_state: {quest_state} and chat_history: {chat_history}")
+async def save_session(
+    session_id: str,
+    quest_state: Dict[str, Any],
+    chat_history: List[Dict[str, str]],
+    general_category: str = None,
+    sub_category: str = None
+) -> None:
+    """
+    Save the session to Supabase or local storage. Category fields are saved as top-level fields, not inside quest_state.
+    """
+    logging.info(f"[save_session] Saving session: {session_id} with quest_state: {quest_state}, chat_history: {chat_history}, general_category: {general_category}, sub_category: {sub_category}")
     if not SUPABASE_API or not SUPABASE_KEY:
         LOCAL_SESSIONS[session_id] = {
             "quest_state": quest_state,
-            "chat_history": chat_history
+            "chat_history": chat_history,
+            "general_category": general_category,
+            "sub_category": sub_category
         }
         logging.info(f"[save_session] Saved to LOCAL_SESSIONS: {LOCAL_SESSIONS[session_id]}")
         return
@@ -71,6 +82,10 @@ async def save_session(session_id: str, quest_state: Dict[str, Any], chat_histor
             "chat_history": chat_history,
             "last_updated": "now()"
         }
+        if general_category:
+            data["general_category"] = general_category
+        if sub_category:
+            data["sub_category"] = sub_category
         response = requests.post(
             f"{SUPABASE_API}/rest/v1/quest_sessions",
             headers={
@@ -87,17 +102,22 @@ async def save_session(session_id: str, quest_state: Dict[str, Any], chat_histor
         # Fallback to local storage
         LOCAL_SESSIONS[session_id] = {
             "quest_state": quest_state,
-            "chat_history": chat_history
+            "chat_history": chat_history,
+            "general_category": general_category,
+            "sub_category": sub_category
         }
         logging.info(f"[save_session] Fallback saved to LOCAL_SESSIONS: {LOCAL_SESSIONS[session_id]}")
 
-async def update_quest_state(session_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+async def update_quest_state(session_id: str, updates: Dict[str, Any], general_category: str = None, sub_category: str = None) -> Dict[str, Any]:
     """Update quest state in Supabase."""
     current = await load_session(session_id)
     logging.info(f"[update_quest_state] Current quest_state: {current['quest_state']}")
     current["quest_state"].update(updates)
     logging.info(f"[update_quest_state] Updated quest_state: {current['quest_state']}")
-    await save_session(session_id, current["quest_state"], current["chat_history"])
+    # Use explicit general_category/sub_category if provided, else from current session
+    gc = general_category or current.get("general_category")
+    sc = sub_category or current.get("sub_category")
+    await save_session(session_id, current["quest_state"], current["chat_history"], gc, sc)
     return current["quest_state"]
 
 def safe_json_parse(response: str) -> dict:
@@ -264,7 +284,7 @@ async def process_quest(
         **result
     }
     logging.info(f"Updating quest state with: {state_update}")
-    await update_quest_state(session_id, state_update)
+    await update_quest_state(session_id, state_update, classification.get("general_category"), classification.get("sub_category"))
 
     return result
 
