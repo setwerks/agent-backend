@@ -207,6 +207,29 @@ async def process_quest(
         logging.info(f"[process_quest] Running classify_quest for: {quest_text}")
         classification = await classify_quest(quest_text)
         logging.info(f"Classification result: {classification}")
+        
+        # Update quest_sessions with category info
+        try:
+            session_update = {
+                "general_category": classification.get("general_category"),
+                "sub_category": classification.get("sub_category"),
+                "last_updated": "now()"
+            }
+            response = requests.patch(
+                f"{SUPABASE_API}/rest/v1/quest_sessions?quest_id=eq.{session_id}",
+                headers={
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation"
+                },
+                json=session_update
+            )
+            if response.status_code not in (200, 201):
+                logging.error(f"Failed to update quest_sessions with category info: {response.text}")
+        except Exception as e:
+            logging.error(f"Error updating quest_sessions with category info: {str(e)}")
+        
         # Update current quest state with classification
         current_quest_state.update(classification)
     else:

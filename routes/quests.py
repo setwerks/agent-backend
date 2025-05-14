@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 import os
 import requests
 from typing import List, Optional, Any, Dict
+import logging
 
 router = APIRouter()
 
@@ -103,10 +104,19 @@ async def create_quest(request: QuestCreateRequest):
         session = await load_session(request.quest_id)
         quest_state = session.get("quest_state", {})
         
+        # Get categories from session
+        general_category = session.get("general_category")
+        sub_category = session.get("sub_category")
+        
+        if not general_category or not sub_category:
+            raise HTTPException(status_code=400, detail="Quest categories not found in session")
+        
         # Merge request data with validated quest state
         data = {
             **quest_state,  # Start with validated quest state
-            **request.dict(exclude_unset=True)  # Override with request data
+            **request.dict(exclude_unset=True),  # Override with request data
+            "general_category": general_category,  # Add categories from session
+            "sub_category": sub_category
         }
         
         # Remove UI and other non-database fields
