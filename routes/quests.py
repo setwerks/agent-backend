@@ -120,13 +120,13 @@ async def create_quest(request: QuestCreateRequest):
             "sub_category": sub_category,
             "quest_id": request.quest_id
         }
-        print(f"DATA: {data}")
+        logging.info(f"DATA: {data}")
         # Remove UI and other non-database fields
         data.pop("ui", None)
         data.pop("action", None)
         data.pop("text", None)
         data.pop("location", None)
-        print(f"DATA: {data}")
+        logging.info(f"DATA: {data}")
 
         if "lat" in data and "lng" in data and data["lat"] is not None and data["lng"] is not None:
             data["location"] = f'POINT({data["lng"]} {data["lat"]})'
