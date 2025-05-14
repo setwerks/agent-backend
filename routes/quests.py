@@ -115,15 +115,22 @@ async def create_quest(request: QuestCreateRequest):
         # Merge request data with validated quest state
         data = {
             **quest_state,  # Start with validated quest state
-            **request.dict(exclude_unset=True),  # Override with request data
+            **request.model_dump(exclude_unset=True),
             "general_category": general_category,  # Add categories from session
-            "sub_category": sub_category
+            "sub_category": sub_category,
+            "quest_id": request.quest_id
         }
-        
+        print(f"DATA: {data}")
         # Remove UI and other non-database fields
         data.pop("ui", None)
         data.pop("action", None)
         data.pop("text", None)
+        data.pop("location", None)
+        print(f"DATA: {data}")
+
+        if "lat" in data and "lng" in data and data["lat"] is not None and data["lng"] is not None:
+            data["location"] = f'POINT({data["lng"]} {data["lat"]})'
+
         
         response = requests.post(
             f"{SUPABASE_API}/rest/v1/quests",
