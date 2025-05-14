@@ -110,7 +110,7 @@ async def start_quest(request: QuestRequest):
         )
         logging.info(f"process_quest result: {result}")
         # Update chat history with assistant response
-        chat_history.append({"role": "assistant", "content": json.dumps(result)})
+        chat_history.append({"role": "assistant", "content": json.dumps(result.get("text"))})
         logging.info(f"Appended assistant response. chat_history now: {chat_history}")
         # Remove 'ui' before saving to Supabase
         quest_state_to_save = {k: v for k, v in result.items() if k != "ui"}
