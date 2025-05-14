@@ -220,13 +220,13 @@ async def process_quest(
     # Load current quest state from session
     session = await load_session(session_id)
     current_quest_state = session.get("quest_state", {})
-    logging.info(f"[process_quest] Loaded current quest_state: {current_quest_state}")
+    #logging.info(f"[process_quest] Loaded current quest_state: {current_quest_state}")
 
     # Only classify if general_category/sub_category are missing
-    if not (current_quest_state.get("general_category") and current_quest_state.get("sub_category")):
-        logging.info(f"[process_quest] Running classify_quest for: {quest_text}")
+    if not (session.get("general_category") and session.get("sub_category")):
+        #logging.info(f"[process_quest] Running classify_quest for: {quest_text}")
         classification = await classify_quest(quest_text)
-        logging.info(f"Classification result: {classification}")
+        #logging.info(f"Classification result: {classification}")
         
         # Update quest_sessions with category info
         try:
@@ -251,11 +251,11 @@ async def process_quest(
             logging.error(f"Error updating quest_sessions with category info: {str(e)}")
         
         # Update current quest state with classification
-        current_quest_state.update(classification)
+        #current_quest_state.update(classification)
     else:
         classification = {
-            "general_category": current_quest_state.get("general_category"),
-            "sub_category": current_quest_state.get("sub_category")
+            "general_category": session.get("general_category"),
+            "sub_category": session.get("sub_category")
         }
         logging.info(f"[process_quest] Using existing classification: {classification}")
 
@@ -265,25 +265,27 @@ async def process_quest(
     logging.info(f"Using category: {category}")
 
     # Build messages: system message with current quest state, then prompt, then chat history, then user message
+    addClassification = {"role": "user", "content": f"Category: {json.dumps(classification)}"}
     system_message = {"role": "user", "content": f"Current quest state: {json.dumps(current_quest_state)}"}
     messages = [
+        addClassification,
         system_message,
         {"role": "user", "content": prompt},
         *chat_history,
         {"role": "user", "content": quest_text}
     ]
-    logging.info(f"Sending messages to Vertex AI: {messages}")
+    #logging.info(f"Sending messages to Vertex AI: {messages}")
     response = get_vertex_chat_response(messages)
-    logging.info(f"Raw Vertex AI response: {response}")
+    #logging.info(f"Raw Vertex AI response: {response}")
     result = safe_json_parse(response)
-    logging.info(f"Parsed result: {result}")
+    #logging.info(f"Parsed result: {result}")
 
     # Update state
     state_update = {
         **classification,
         **result
     }
-    logging.info(f"Updating quest state with: {state_update}")
+    #logging.info(f"Updating quest state with: {state_update}")
     await update_quest_state(session_id, state_update, classification.get("general_category"), classification.get("sub_category"))
 
     return result

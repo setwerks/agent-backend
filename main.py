@@ -87,49 +87,44 @@ async def start_quest(request: QuestRequest):
         logging.info(f"Initial chat_history: {chat_history}")
         logging.info(f"Initial quest_state: {quest_state}")
         
-        # Check if we need to process (only if categories are missing)
+        # Always process a new user message
         general_category = session.get("general_category")
         sub_category = session.get("sub_category")
-        needs_processing = not (general_category and sub_category)
-
-        if needs_processing:
-            # 1. Classify (do NOT append to chat_history)
+        classification = None
+        # Only classify if categories are missing
+        if not (general_category and sub_category):
             logging.info("Calling classify_quest for category detection...")
             classification = await classify_quest(request.message)
             logging.info(f"Classification result: {classification}")
-            # 2. Now append user message to chat_history
-            chat_history.append({"role": "user", "content": request.message})
-            logging.info(f"Appended user message. chat_history now: {chat_history}")
-            # 3. Process quest
-            logging.info("Calling process_quest...")
-            result = await process_quest(
-                quest_text=request.message,
-                session_id=session_id,
-                chat_history=chat_history
-            )
-            logging.info(f"process_quest result: {result}")
-            # Update chat history with assistant response
-            chat_history.append({"role": "assistant", "content": json.dumps(result)})
-            logging.info(f"Appended assistant response. chat_history now: {chat_history}")
-            # Remove 'ui' before saving to Supabase
-            quest_state_to_save = {k: v for k, v in result.items() if k != "ui"}
-            general_category = result.get("general_category") or classification.get("general_category") or session.get("general_category")
-            sub_category = result.get("sub_category") or classification.get("sub_category") or session.get("sub_category")
-            await save_session(session_id, quest_state_to_save, chat_history, general_category, sub_category)
-            logging.info(f"Session saved for session_id: {session_id}")
-            # Return the full result (including 'ui') to the frontend
-            return QuestResponse(
-                status="ok",
-                session_id=session_id,
-                quest_state=result
-            )
-        else:
-            # If we already have categories, just return the current state
-            return QuestResponse(
-                status="ok",
-                session_id=session_id,
-                quest_state=quest_state
-            )
+            general_category = classification.get("general_category")
+            sub_category = classification.get("sub_category")
+        # Always append user message to chat_history
+        chat_history.append({"role": "user", "content": request.message})
+        logging.info(f"Appended user message. chat_history now: {chat_history}")
+        # Process quest
+        logging.info("Calling process_quest...")
+        result = await process_quest(
+            quest_text=request.message,
+            session_id=session_id,
+            chat_history=chat_history
+        )
+        logging.info(f"process_quest result: {result}")
+        # Update chat history with assistant response
+        chat_history.append({"role": "assistant", "content": json.dumps(result)})
+        logging.info(f"Appended assistant response. chat_history now: {chat_history}")
+        # Remove 'ui' before saving to Supabase
+        quest_state_to_save = {k: v for k, v in result.items() if k != "ui"}
+        # Use the most up-to-date categories
+        general_category = result.get("general_category") or general_category
+        sub_category = result.get("sub_category") or sub_category
+        await save_session(session_id, quest_state_to_save, chat_history, general_category, sub_category)
+        logging.info(f"Session saved for session_id: {session_id}")
+        # Return the full result (including 'ui') to the frontend
+        return QuestResponse(
+            status="ok",
+            session_id=session_id,
+            quest_state=result
+        )
     except Exception as e:
         logging.exception("Error in /start-quest endpoint")
         raise
