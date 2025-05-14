@@ -98,8 +98,8 @@ class QuestCreateRequest(BaseModel):
 async def create_quest(request: QuestCreateRequest):
     logging.info(f"REQUEST: {request}")
     # Validate required fields
-    if not request.want_or_have or not request.description or not request.quest_id:
-        raise HTTPException(status_code=400, detail="Missing required fields")
+    if not request.quest_id:
+        raise HTTPException(status_code=400, detail="Missing Quest ID")
 
     # Load session state to ensure we have validated data
     try:
