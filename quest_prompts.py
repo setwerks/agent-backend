@@ -72,7 +72,7 @@ Example output:
   "location": "San Francisco",
   "lat": 37.774929,
   "lng": -122.419416,
-  "distance": null,
+  "distance": 11,
   "photos": [],
   "action": "validate_location",
   "ui": {
@@ -117,7 +117,7 @@ Example output:
   "move_in_date": null,
   "lat": 37.774929,
   "lng": -122.419416,
-  "distance": null,
+  "distance":  2,
   "action": "ask_for_distance",
   "ui": {
     "trigger": "distance_select",
@@ -181,7 +181,7 @@ Example output:
   "work_location": null,
   "lat": 37.774929,
   "lng": -122.419416,
-  "distance": null,
+  "distance": 2,
   "resume_uploaded": false,
   "action": "ask_for_resume",
   "ui": {
@@ -245,7 +245,7 @@ Example output:
   "qualifications": null,
   "lat": 37.774929,
   "lng": -122.419416,
-  "distance": null,
+  "distance": 2,
   "action": "ask_for_service_type"
 }
 

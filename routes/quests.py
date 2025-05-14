@@ -4,6 +4,7 @@ import os
 import requests
 from typing import List, Optional, Any, Dict
 import logging
+from quest_tools import load_session
 
 router = APIRouter()
 
