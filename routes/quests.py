@@ -61,8 +61,8 @@ class QuestState(BaseModel):
 class QuestCreateRequest(BaseModel):
     # Required fields
     quest_id: str
-    want_or_have: str
-    description: str
+    want_or_have: Optional[str] = None
+    description: Optional[str] = None
     
     # Optional fields that we want to save
     general_location: Optional[str] = None
