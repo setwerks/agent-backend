@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 from vertex_client import get_vertex_chat_response
 from quest_prompts import FOR_SALE_PROMPT, HOUSING_PROMPT, JOBS_PROMPT, SERVICES_PROMPT, COMMUNITY_PROMPT, GIGS_PROMPT
+import httpx
 
 # === SUPABASE CONFIG ===
 SUPABASE_API = os.getenv("SUPABASE_API")
@@ -162,13 +163,22 @@ async def classify_quest(quest_text: str, taxonomy: Dict[str, Any] = TAXONOMY) -
     return safe_json_parse(response)
 
 async def geocode_location(location: str) -> Dict[str, Any]:
-    """Geocode location using Vertex AI."""
-    prompt = "You are a location geocoder. Given a location string, return a JSON object with 'latitude' and 'longitude' fields. If the location is ambiguous, return null for both fields."
-    messages = [
-        {"role": "user", "content": f"{prompt}\n{location}"}
-    ]
-    response = get_vertex_chat_response(messages)
-    return safe_json_parse(response)
+    """Geocode location using our /api/geocode endpoint."""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{settings.API_BASE_URL}/api/geocode",
+                params={"location": location}
+            )
+            response.raise_for_status()
+            data = response.json()
+            return {
+                "latitude": data.get("lat"),
+                "longitude": data.get("lng")
+            }
+        except Exception as e:
+            logger.error(f"Geocoding failed for location '{location}': {str(e)}")
+            return {"latitude": None, "longitude": None}
 
 async def confirm_location(location: str, coordinates: Dict[str, float]) -> bool:
     """Confirm location using Vertex AI."""

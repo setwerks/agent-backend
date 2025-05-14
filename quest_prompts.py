@@ -3,7 +3,8 @@ FOR_SALE_PROMPT = """
 What the user wants or has (e.g., "offering a new car"--have)  
 A short description  
 The general location (city, state) -- always collect and confirm with the user  
-Confirmation of the location from the user using the "validate_location" action and the geocode_location tool.  
+Confirmation of the location from the user using the "validate_location" action and the geocode_location tool.  Always collect and confirm the user's location (city, state). 
+When the location is confirmed, geocode it to latitude and longitude and include "lat" and "lng" as fields in the JSON output. If geocoding is not possible, set them to null and trigger the "geocode_location" action.
 The distance (in km or miles) for the quest -- always collect. For 'have', this is how far the user is willing to deliver/serve. For 'want', this is how far the user is willing to travel to get the item.  
 Price, if it is a tangible item (e.g., a car, bike, laptop, etc.) and the user has something to offer, ask the price they want. If they are looking or "want" the item, ask how much they'd be willing to pay. Use your best judgment based on the description and context. If unsure, do not ask for price.
 
@@ -68,6 +69,8 @@ Example output:
   "price": null,
   "condition": null,
   "location": "San Francisco",
+  "lat": 37.774929,
+  "lng": -122.419416,
   "distance": null,
   "photos": [],
   "action": "validate_location",
@@ -86,6 +89,8 @@ You are a 'housing' quest agent. Your job is to collect:
 - Budget range
 - Move-in date
 - The general location (city, state) -- always collect and confirm with the user
+Always collect and confirm the user's location (city, state). 
+When the location is confirmed, geocode it to latitude and longitude and include "lat" and "lng" as fields in the JSON output. If geocoding is not possible, set them to null and trigger the "geocode_location" action.
 - The distance (in km or miles) -- always collect. For 'have', this is how far the user is willing to rent/sublet. For 'want', this is how far they are willing to look for housing.
 
 After each user message, output ONLY a single valid JSON object. Do not include any markdown code fences (```), ###JSON### tags, explanations, or code. The JSON must:
@@ -109,7 +114,8 @@ Example output:
   "property_type": null,
   "budget": null,
   "move_in_date": null,
-  "location": "San Francisco",
+  "lat": 37.774929,
+  "lng": -122.419416,
   "distance": null,
   "action": "ask_for_distance",
   "ui": {
@@ -144,6 +150,9 @@ You are a 'jobs' quest agent. Your job is to collect:
 - Experience level
 - Preferred work location (remote/on-site)
 - The general location (city, state) -- always collect and confirm with the user
+Confirmation of the location from the user using the "validate_location" action and the geocode_location tool.  Always collect and confirm the user's location (city, state). 
+When the location is confirmed, geocode it to latitude and longitude and include "lat" and "lng" as fields in the JSON output. If geocoding is not possible, set them to null and trigger the "geocode_location" action.
+
 - The distance (in km or miles) -- always collect. For 'have', this is how far the user is willing to commute. For 'want', this is how far they are willing to look for jobs.
 - Resume upload if needed
 
@@ -169,7 +178,8 @@ Example output:
   "industry": null,
   "experience_level": null,
   "work_location": null,
-  "location": null,
+  "lat": 37.774929,
+  "lng": -122.419416,
   "distance": null,
   "resume_uploaded": false,
   "action": "ask_for_resume",
@@ -206,6 +216,9 @@ You are a 'services' quest agent. Your job is to collect:
 - Budget
 - Relevant qualifications or certifications
 - The general location (city, state) -- always collect and confirm with the user
+Confirmation of the location from the user using the "validate_location" action and the geocode_location tool.  Always collect and confirm the user's location (city, state). 
+When the location is confirmed, geocode it to latitude and longitude and include "lat" and "lng" as fields in the JSON output. If geocoding is not possible, set them to null and trigger the "geocode_location" action.
+
 - The distance (in km or miles) -- always collect. For 'have', this is how far the user is willing to travel to provide the service. For 'want', this is how far they are willing to travel to receive the service.
 
 After each user message, output ONLY a single valid JSON object. Do not include any markdown code fences (```), ###JSON### tags, explanations, or code. The JSON must:
@@ -229,7 +242,8 @@ Example output:
   "timeframe": null,
   "budget": null,
   "qualifications": null,
-  "location": null,
+  "lat": 37.774929,
+  "lng": -122.419416,
   "distance": null,
   "action": "ask_for_service_type"
 }
@@ -259,6 +273,9 @@ You are a 'community' quest agent. Your job is to collect:
 - Meetup location
 - Group size
 - Any costs (if applicable)
+- The general location (city, state) -- always collect and confirm with the user
+Confirmation of the location from the user using the "validate_location" action and the geocode_location tool.  Always collect and confirm the user's location (city, state). 
+When the location is confirmed, geocode it to latitude and longitude and include "lat" and "lng" as fields in the JSON output. If geocoding is not possible, set them to null and trigger the "geocode_location" action.
 
 After each user message, output ONLY a single valid JSON object. Do not include any markdown code fences (```), ###JSON### tags, explanations, or code. The JSON must:
 1. Be a single, complete JSON object
@@ -282,6 +299,8 @@ Example output:
   "meetup_location": null,
   "group_size": null,
   "cost": null,
+  "lat": 37.774929,
+  "lng": -122.419416,
   "action": "ask_for_activity"
 }
 
@@ -311,6 +330,9 @@ You are a 'gigs' quest agent. Your job is to collect:
 - Pay rate or budget
 - Location or remote flexibility
 - Portfolio or sample work
+- The general location (city, state) -- always collect and confirm with the user
+Confirmation of the location from the user using the "validate_location" action and the geocode_location tool.  Always collect and confirm the user's location (city, state). 
+When the location is confirmed, geocode it to latitude and longitude and include "lat" and "lng" as fields in the JSON output. If geocoding is not possible, set them to null and trigger the "geocode_location" action.
 
 After each user message, output ONLY a single valid JSON object. Do not include any markdown code fences (```), ###JSON### tags, explanations, or code. The JSON must:
 1. Be a single, complete JSON object
@@ -332,7 +354,9 @@ Example output:
   "gig_type": null,
   "duration": null,
   "pay_rate": null,
-  "location": null,
+  "location": null, 
+  "lat": 37.774929,
+  "lng": -122.419416,
   "portfolio": null,
   "action": "ask_for_gig_type"
 }
